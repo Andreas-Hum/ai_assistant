@@ -1,0 +1,319 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tool Argument Check</title>
+<style>
+  :root {
+    --bg: #f6f6f3; --card: #ffffff; --ink: #1d1d1b; --muted: #6b6b66; --line: #e2e1dc;
+    --ref: #eef3fb; --ref-ink: #1f4f8f; --pred: #f6f1e8; --pred-ink: #7a4b12;
+    --ok: #1f7a4d; --part: #b7791f; --bad: #b42318; --focus: #2b5fd9;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #161615; --card: #20201e; --ink: #ecebe6; --muted: #a3a29b; --line: #34332f;
+      --ref: #1c2a3d; --ref-ink: #a9c7f2; --pred: #33291b; --pred-ink: #f0c98f;
+      --ok: #4cc38a; --part: #e0a53d; --bad: #f07a6e; --focus: #7aa2ff;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+         font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 760px; margin: 0 auto; padding: 20px 16px 48px; }
+  h1 { font-size: 1.5rem; margin: 8px 0 4px; }
+  h2 { font-size: 1.1rem; margin: 20px 0 8px; }
+  p { margin: 8px 0; }
+  .muted { color: var(--muted); }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 16px; margin: 12px 0; }
+  .label { font-size: .75rem; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
+  .tool { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-weight: 600; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  @media (max-width: 600px) { .grid { grid-template-columns: 1fr; } }
+  .ans { border-radius: 10px; padding: 12px; }
+  .ans.ref { background: var(--ref); color: var(--ref-ink); }
+  .ans.pred { background: var(--pred); color: var(--pred-ink); }
+  .ans dl { margin: 6px 0 0; }
+  .ans dt { font-size: .8rem; opacity: .8; }
+  .ans dd { margin: 0 0 6px; font-weight: 600; color: var(--ink); word-break: break-word; }
+  .buttons { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 14px; }
+  button { font: inherit; border-radius: 10px; border: 1px solid var(--line); background: var(--card); color: var(--ink);
+           padding: 12px 10px; cursor: pointer; }
+  button:focus-visible, input:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+  .b-ok { border-color: var(--ok); color: var(--ok); font-weight: 700; }
+  .b-part { border-color: var(--part); color: var(--part); font-weight: 700; }
+  .b-bad { border-color: var(--bad); color: var(--bad); font-weight: 700; }
+  .b-ok:hover { background: var(--ok); color: #fff; } .b-part:hover { background: var(--part); color: #fff; }
+  .b-bad:hover { background: var(--bad); color: #fff; }
+  .chosen { color: #fff !important; }
+  .b-ok.chosen { background: var(--ok); } .b-part.chosen { background: var(--part); } .b-bad.chosen { background: var(--bad); }
+  .primary { background: var(--focus); border-color: var(--focus); color: #fff; font-weight: 600; padding: 12px 20px; }
+  .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .spacer { flex: 1; }
+  input[type=text] { font: inherit; width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line);
+                     background: var(--card); color: var(--ink); }
+  .bar { height: 6px; background: var(--line); border-radius: 3px; overflow: hidden; margin: 8px 0 4px; }
+  .bar > div { height: 100%; background: var(--focus); width: 0; transition: width .2s; }
+  .rules li { margin: 6px 0; }
+  .tag { display: inline-block; font-weight: 700; min-width: 5.5em; }
+  .tag.ok { color: var(--ok); } .tag.part { color: var(--part); } .tag.bad { color: var(--bad); }
+  .ex { border-left: 3px solid var(--line); padding-left: 10px; margin: 10px 0; }
+  .kbd { font-family: ui-monospace, monospace; border: 1px solid var(--line); border-radius: 4px; padding: 0 5px; font-size: .85em; }
+  .hidden { display: none; }
+  textarea { width: 100%; min-height: 120px; font: 13px ui-monospace, monospace; border-radius: 10px; padding: 8px;
+             background: var(--card); color: var(--ink); border: 1px solid var(--line); }
+</style>
+</head>
+<body>
+<main>
+
+<!-- Start screen -->
+<section id="start">
+  <h1>Tool argument check</h1>
+  <p class="muted">About 30 minutes for 150 short questions. Your progress is saved in this browser, so you can stop and continue later.</p>
+
+  <div class="card">
+    <h2 style="margin-top:0">What you do</h2>
+    <p>An AI assistant on smart glasses sees a situation and calls a tool, for example a web search or a calendar entry.
+       The tool is always the right one. You only judge <b>what it filled in</b>: compare the <b>model's answer</b>
+       with the <b>reference answer</b>, given the situation.</p>
+    <ul class="rules">
+      <li><span class="tag ok">Correct</span> would help the user just as well. Different words for the same thing count as correct.</li>
+      <li><span class="tag part">Partial</span> same topic, but asks for something different or narrower, or one of several fields is wrong.</li>
+      <li><span class="tag bad">Incorrect</span> a different topic, or would not help the user.</li>
+    </ul>
+    <p class="muted">&#10216;output of &hellip;&#10217; means the value is taken from an earlier step, e.g. the user's GPS position.</p>
+    <p class="muted">Do not overthink it: go with your first impression. Keys <span class="kbd">1</span> <span class="kbd">2</span> <span class="kbd">3</span> work too.</p>
+  </div>
+
+  <div class="card">
+    <h2 style="margin-top:0">Three examples</h2>
+    <div class="ex"><b>Museum exhibit "Ancient Egypt Artifacts"</b>, web search.<br>
+      Reference: <i>Ancient Egyptian artifacts and cultural significance</i> &middot; Model: <i>Ancient Egypt Artifacts</i><br>
+      &rarr; <span class="tag ok">Correct</span> same search, different words.</div>
+    <div class="ex"><b>Rose garden, gardening fan</b>, web search.<br>
+      Reference: <i>rose care and popular varieties</i> &middot; Model: <i>rose blooming times and details</i><br>
+      &rarr; <span class="tag part">Partial</span> same topic, different information.</div>
+    <div class="ex"><b>Botanical garden, no specific plant named</b>, Wikipedia search.<br>
+      Reference: <i>Ghost Orchid</i> &middot; Model: <i>Hibiscus plant</i><br>
+      &rarr; <span class="tag bad">Incorrect</span> a different plant.</div>
+  </div>
+
+  <div class="card">
+    <label for="name"><b>Your first name or initials</b> (only used to name your results file)</label>
+    <input type="text" id="name" maxlength="30" autocomplete="off" placeholder="e.g. Maria">
+    <div class="row" style="margin-top:12px">
+      <button class="primary" id="go">Start</button>
+      <span class="muted" id="resume"></span>
+    </div>
+  </div>
+</section>
+
+<!-- Item screen -->
+<section id="item" class="hidden">
+  <div class="row">
+    <span class="muted" id="count"></span><span class="spacer"></span>
+    <button id="help" title="Show the rules">Rules</button>
+    <button id="finishEarly" title="Download what you have so far">Save &amp; download</button>
+  </div>
+  <div class="bar"><div id="progress"></div></div>
+
+  <div class="card">
+    <div class="label">Situation</div>
+    <div id="situation"></div>
+    <div id="personaBox" style="margin-top:10px">
+      <div class="label">About the user</div>
+      <div id="persona"></div>
+    </div>
+    <div style="margin-top:10px">
+      <div class="label">Tool</div>
+      <span class="tool" id="tool"></span> <span class="muted" id="desc"></span>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="ans ref"><div class="label" style="color:inherit">Reference answer</div><dl id="ref"></dl></div>
+    <div class="ans pred"><div class="label" style="color:inherit">Model answer</div><dl id="pred"></dl></div>
+  </div>
+
+  <div class="buttons">
+    <button class="b-ok" data-label="correct">Correct <span class="kbd">1</span></button>
+    <button class="b-part" data-label="partial">Partial <span class="kbd">2</span></button>
+    <button class="b-bad" data-label="incorrect">Incorrect <span class="kbd">3</span></button>
+  </div>
+  <div style="margin-top:12px">
+    <input type="text" id="note" placeholder="Optional note, e.g. 'reference has a typo'">
+  </div>
+  <div class="row" style="margin-top:12px">
+    <button id="back">&larr; Back</button>
+  </div>
+</section>
+
+<!-- Rules overlay -->
+<section id="rules" class="hidden">
+  <div class="card">
+    <h2 style="margin-top:0">Rules</h2>
+    <ul class="rules">
+      <li><span class="tag ok">Correct</span> would help the user just as well (different words for the same thing are fine).</li>
+      <li><span class="tag part">Partial</span> same topic but different or narrower information, or one of several fields wrong.</li>
+      <li><span class="tag bad">Incorrect</span> a different topic, or would not help the user.</li>
+    </ul>
+    <p class="muted">Only judge what was filled in, not whether the tool itself was a good idea.
+       &#10216;output of &hellip;&#10217; means the value is taken from an earlier step, e.g. the user's GPS position.</p>
+    <button class="primary" id="closeRules">Back to the question</button>
+  </div>
+</section>
+
+<!-- Done screen -->
+<section id="done" class="hidden">
+  <h1>Thank you!</h1>
+  <p id="doneText"></p>
+  <div class="card">
+    <p><b>Step 1:</b> download your answers and send the file to the person who asked you.</p>
+    <button class="primary" id="download">Download my answers</button>
+    <p style="margin-top:16px"><b>Or:</b> copy the text below and paste it into a message.</p>
+    <button id="copy">Copy answers</button>
+    <textarea id="csvBox" readonly></textarea>
+  </div>
+  <button id="review">&larr; Go back to the questions</button>
+</section>
+
+</main>
+<script src="items.js"></script>
+<script>
+(function () {
+  "use strict";
+  var ITEMS = window.ITEMS || [];
+  var $ = function (id) { return document.getElementById(id); };
+  var state = null, pos = 0;
+
+  // storage that survives private windows failing
+  var store = {
+    get: function (k) { try { return JSON.parse(localStorage.getItem(k)); } catch (e) { return null; } },
+    set: function (k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
+  };
+
+  // deterministic shuffle per annotator name (each person gets their own order)
+  function seededOrder(name) {
+    var h = 2166136261;
+    for (var i = 0; i < name.length; i++) { h ^= name.charCodeAt(i); h = Math.imul(h, 16777619); }
+    var rnd = function () { h ^= h << 13; h ^= h >>> 17; h ^= h << 5; return ((h >>> 0) % 1000000) / 1000000; };
+    var idx = ITEMS.map(function (_, i) { return i; });
+    for (var j = idx.length - 1; j > 0; j--) { var k = Math.floor(rnd() * (j + 1)); var t = idx[j]; idx[j] = idx[k]; idx[k] = t; }
+    return idx;
+  }
+
+  function key(name) { return "argcheck:" + name.toLowerCase(); }
+  function save() { store.set(key(state.name), state); }
+  function show(id) {
+    ["start", "item", "rules", "done"].forEach(function (s) { $(s).classList.toggle("hidden", s !== id); });
+    window.scrollTo(0, 0);
+  }
+
+  function fill(dl, obj) {
+    dl.innerHTML = "";
+    var keys = Object.keys(obj || {});
+    if (!keys.length) { var dd = document.createElement("dd"); dd.textContent = "(nothing filled in)"; dl.appendChild(dd); return; }
+    keys.forEach(function (k) {
+      var dt = document.createElement("dt"); dt.textContent = k.replace(/_/g, " ");
+      var dd = document.createElement("dd"); var v = obj[k];
+      var txt = (v === "" || v === null) ? "(empty)" : (typeof v === "object" ? JSON.stringify(v) : String(v));
+      // $RESULT(tool.field) = value taken from an earlier tool call
+      dd.textContent = txt.replace(/\$RESULT\((\w+)\.(\w+)\)/g, function (_, t, f) {
+        return "\u27e8output of " + t.replace(/_/g, " ") + ": " + f.replace(/_/g, " ") + "\u27e9"; });
+      dl.appendChild(dt); dl.appendChild(dd);
+    });
+  }
+
+  function render() {
+    var n = ITEMS.length, it = ITEMS[state.order[pos]];
+    var answered = Object.keys(state.labels).length;
+    $("count").textContent = "Question " + (pos + 1) + " of " + n + " · " + answered + " answered";
+    $("progress").style.width = (100 * answered / n) + "%";
+    $("situation").textContent = it.situation;
+    $("personaBox").classList.toggle("hidden", !it.persona);
+    $("persona").textContent = it.persona || "";
+    $("tool").textContent = it.tool;
+    $("desc").textContent = it.description ? "— " + it.description : "";
+    fill($("ref"), it.reference); fill($("pred"), it.predicted);
+    var cur = state.labels[it.id];
+    document.querySelectorAll(".buttons button").forEach(function (b) {
+      b.classList.toggle("chosen", cur && cur.label === b.dataset.label);
+    });
+    $("note").value = (cur && cur.note) || "";
+    $("back").disabled = pos === 0;
+  }
+
+  function answer(label) {
+    var it = ITEMS[state.order[pos]];
+    state.labels[it.id] = { label: label, note: $("note").value.trim(), time: new Date().toISOString() };
+    state.pos = pos;
+    save();
+    var next = -1;
+    for (var i = pos + 1; i < ITEMS.length; i++) { if (!state.labels[ITEMS[state.order[i]].id]) { next = i; break; } }
+    if (next < 0) { for (var j = 0; j < ITEMS.length; j++) { if (!state.labels[ITEMS[state.order[j]].id]) { next = j; break; } } }
+    if (next < 0) { finish(); } else { pos = next; state.pos = pos; save(); render(); }
+  }
+
+  function csv() {
+    var esc = function (s) { s = String(s || ""); return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
+    var lines = ["id,label,notes,annotator,time"];
+    ITEMS.forEach(function (it) {
+      var l = state.labels[it.id];
+      if (l) lines.push([it.id, l.label, esc(l.note), esc(state.name), l.time].join(","));
+    });
+    return lines.join("\n") + "\n";
+  }
+
+  function finish() {
+    var n = Object.keys(state.labels).length;
+    $("doneText").textContent = "You answered " + n + " of " + ITEMS.length + " questions.";
+    $("csvBox").value = csv();
+    show("done");
+  }
+
+  $("go").addEventListener("click", function () {
+    var name = $("name").value.trim();
+    if (!name) { $("name").focus(); $("name").placeholder = "Please type a name or initials first"; return; }
+    state = store.get(key(name)) || { name: name, order: seededOrder(name), labels: {}, pos: 0 };
+    if (!state.order || state.order.length !== ITEMS.length) { state.order = seededOrder(name); }
+    pos = Math.min(state.pos || 0, ITEMS.length - 1);
+    save(); show("item"); render();
+  });
+  $("name").addEventListener("input", function () {
+    var s = store.get(key(this.value.trim()));
+    $("resume").textContent = s ? "Welcome back — " + Object.keys(s.labels).length + " answers saved." : "";
+  });
+  $("name").addEventListener("keydown", function (e) { if (e.key === "Enter") $("go").click(); });
+  document.querySelectorAll(".buttons button").forEach(function (b) {
+    b.addEventListener("click", function () { answer(b.dataset.label); });
+  });
+  $("back").addEventListener("click", function () { if (pos > 0) { pos--; state.pos = pos; save(); render(); } });
+  $("help").addEventListener("click", function () { show("rules"); });
+  $("closeRules").addEventListener("click", function () { show("item"); render(); });
+  $("finishEarly").addEventListener("click", finish);
+  $("review").addEventListener("click", function () { show("item"); render(); });
+  $("download").addEventListener("click", function () {
+    var blob = new Blob([csv()], { type: "text/csv" });
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "labels_" + state.name.replace(/[^\w-]+/g, "_") + ".csv";
+    document.body.appendChild(a); a.click(); a.remove();
+  });
+  $("copy").addEventListener("click", function () {
+    var box = $("csvBox"); box.select();
+    var done = function () { $("copy").textContent = "Copied!"; };
+    if (navigator.clipboard) { navigator.clipboard.writeText(box.value).then(done, function () { document.execCommand("copy"); done(); }); }
+    else { document.execCommand("copy"); done(); }
+  });
+  document.addEventListener("keydown", function (e) {
+    if ($("item").classList.contains("hidden") || document.activeElement === $("note")) return;
+    if (e.key === "1") answer("correct");
+    else if (e.key === "2") answer("partial");
+    else if (e.key === "3") answer("incorrect");
+    else if (e.key === "ArrowLeft") $("back").click();
+  });
+})();
+</script>
+</body>
+</html>
