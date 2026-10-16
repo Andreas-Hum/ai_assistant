@@ -22,7 +22,9 @@ authorisation, so Google shows no "unverified app" warning. Until a form is conf
 Responses tab > three dots > **Download responses (.csv)**, put the file in this project, then
 
     python annotation_site/from_form.py <responses.csv> labels/
-    cd public-release-staging && python scripts/argument_judge.py agreement figures/arg_human_A.csv ../labels/labels_*.csv
+    python annotation_site/analyse_labels.py public-release-staging/figures/arg_human_A.csv labels/labels_*.csv --retest labels/retest/labels_Andreas.csv
+
+`analyse_labels.py` applies ANALYSIS_PLAN.md (screening, final labels, agreement); do not change the plan after data arrives.
 
 Every person appears several times (one response per 10 answers); `from_form.py` keeps their most complete one.
 Responses named `test` or `test-...` (such as the setup check `test-setup`) are skipped, so they never reach the

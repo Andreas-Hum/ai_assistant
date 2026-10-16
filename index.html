@@ -4,247 +4,379 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Tool Argument Check</title>
+<meta name="description" content="A short research task: judge whether an AI assistant filled in its tool calls correctly.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%232456c7'/%3E%3Cpath d='M9 16.5l4.5 4.5L23 11.5' fill='none' stroke='white' stroke-width='3.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
 <style>
   :root {
-    --bg: #f6f6f3; --card: #ffffff; --ink: #1d1d1b; --muted: #6b6b66; --line: #e2e1dc;
-    --ref: #eef3fb; --ref-ink: #1f4f8f; --pred: #f6f1e8; --pred-ink: #7a4b12;
-    --ok: #1f7a4d; --part: #b7791f; --bad: #b42318; --focus: #2b5fd9;
+    --bg: #f6f6f3; --surface: #ffffff; --sunken: #f1f0ec; --ink: #1c1c1a; --ink-2: #44443f; --muted: #6b6b66;
+    --line: #e3e2dd; --line-strong: #cfcec8;
+    --accent: #2456c7; --accent-soft: #e9effb;
+    --ref-bg: #edf2fb; --ref-ink: #1d4b8c; --pred-bg: #f8f1e6; --pred-ink: #7a4a10;
+    --ok: #1d7a4b; --ok-bg: #e6f3ec; --part: #9a5c0b; --part-bg: #fbf0df; --bad: #b42318; --bad-bg: #fbebea;
+    --shadow: 0 1px 2px rgba(20, 20, 18, .05), 0 4px 16px rgba(20, 20, 18, .05);
   }
   @media (prefers-color-scheme: dark) {
     :root {
-      --bg: #161615; --card: #20201e; --ink: #ecebe6; --muted: #a3a29b; --line: #34332f;
-      --ref: #1c2a3d; --ref-ink: #a9c7f2; --pred: #33291b; --pred-ink: #f0c98f;
-      --ok: #4cc38a; --part: #e0a53d; --bad: #f07a6e; --focus: #7aa2ff;
+      --bg: #141413; --surface: #1d1d1b; --sunken: #232321; --ink: #edece7; --ink-2: #cfcec8; --muted: #a09f98;
+      --line: #313130; --line-strong: #44443f;
+      --accent: #7ea2ff; --accent-soft: #1f2a44;
+      --ref-bg: #19263a; --ref-ink: #a9c6f3; --pred-bg: #30271a; --pred-ink: #efc88e;
+      --ok: #55c58f; --ok-bg: #16291f; --part: #e3aa4c; --part-bg: #2e2416; --bad: #f2867b; --bad-bg: #321b19;
+      --shadow: none;
     }
   }
   * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
   body { margin: 0; background: var(--bg); color: var(--ink);
-         font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
-  main { max-width: 760px; margin: 0 auto; padding: 20px 16px 48px; }
-  h1 { font-size: 1.5rem; margin: 8px 0 4px; }
-  h2 { font-size: 1.1rem; margin: 20px 0 8px; }
-  p { margin: 8px 0; }
+         font: 16px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+  a { color: var(--accent); }
+  h1, h2, h3 { line-height: 1.25; margin: 0; }
+  p { margin: 0 0 10px; }
   .muted { color: var(--muted); }
-  .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 16px; margin: 12px 0; }
-  .label { font-size: .75rem; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
-  .tool { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-weight: 600; }
-  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-  @media (max-width: 600px) { .grid { grid-template-columns: 1fr; } }
-  .ans { border-radius: 10px; padding: 12px; }
-  .ans.ref { background: var(--ref); color: var(--ref-ink); }
-  .ans.pred { background: var(--pred); color: var(--pred-ink); }
-  .ans dl { margin: 6px 0 0; }
-  .ans dt { font-size: .8rem; opacity: .8; }
-  .ans dd { margin: 0 0 6px; font-weight: 600; color: var(--ink); word-break: break-word; }
-  .buttons { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 14px; }
-  button { font: inherit; border-radius: 10px; border: 1px solid var(--line); background: var(--card); color: var(--ink);
-           padding: 12px 10px; cursor: pointer; }
-  button:focus-visible, input:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
-  .b-ok { border-color: var(--ok); color: var(--ok); font-weight: 700; }
-  .b-part { border-color: var(--part); color: var(--part); font-weight: 700; }
-  .b-bad { border-color: var(--bad); color: var(--bad); font-weight: 700; }
-  .b-ok:hover { background: var(--ok); color: #fff; } .b-part:hover { background: var(--part); color: #fff; }
-  .b-bad:hover { background: var(--bad); color: #fff; }
-  .chosen { color: #fff !important; }
-  .b-ok.chosen { background: var(--ok); } .b-part.chosen { background: var(--part); } .b-bad.chosen { background: var(--bad); }
-  .primary { background: var(--focus); border-color: var(--focus); color: #fff; font-weight: 600; padding: 12px 20px; }
-  .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .small { font-size: .875rem; }
+  .hidden { display: none !important; }
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+  /* header */
+  header { position: sticky; top: 0; z-index: 5; background: var(--bg); background: color-mix(in srgb, var(--bg) 88%, transparent);
+           backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border-bottom: 1px solid var(--line); }
+  .bar-inner { max-width: 780px; margin: 0 auto; padding: 10px 16px; display: flex; align-items: center; gap: 12px; }
+  .brand { display: flex; align-items: center; gap: 9px; font-weight: 650; letter-spacing: -.01em; }
+  .brand svg { flex: none; }
   .spacer { flex: 1; }
-  input[type=text] { font: inherit; width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line);
-                     background: var(--card); color: var(--ink); }
-  .bar { height: 6px; background: var(--line); border-radius: 3px; overflow: hidden; margin: 8px 0 4px; }
-  .bar > div { height: 100%; background: var(--focus); width: 0; transition: width .2s; }
-  .rules li { margin: 6px 0; }
-  .tag { display: inline-block; font-weight: 700; min-width: 5.5em; }
-  .tag.ok { color: var(--ok); } .tag.part { color: var(--part); } .tag.bad { color: var(--bad); }
-  .ex { border-left: 3px solid var(--line); padding-left: 10px; margin: 10px 0; }
-  .kbd { font-family: ui-monospace, monospace; border: 1px solid var(--line); border-radius: 4px; padding: 0 5px; font-size: .85em; }
-  .hidden { display: none; }
-  .small { font-size: .85rem; min-height: 1.3em; }
-  .sent-ok { color: var(--ok); font-weight: 600; } .sent-bad { color: var(--bad); font-weight: 600; }
-  summary { cursor: pointer; font-weight: 600; }
+  .meter { display: flex; align-items: center; gap: 10px; min-width: 0; }
+  .meter .track { width: 120px; height: 6px; border-radius: 3px; background: var(--line); overflow: hidden; }
+  .meter .fill { height: 100%; width: 0; background: var(--accent); border-radius: 3px; transition: width .25s ease; }
+  .meter .num { font-size: .875rem; color: var(--ink-2); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  @media (max-width: 520px) { .meter .track { width: 64px; } .brand span { display: none; } }
+
+  main { max-width: 780px; margin: 0 auto; padding: 24px 16px 64px; }
+
+  /* generic pieces */
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 20px; box-shadow: var(--shadow); }
+  .stack > * + * { margin-top: 16px; }
+  .eyebrow { font-size: .8rem; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--accent); }
+  .label { font-size: .75rem; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
+  button { font: inherit; color: inherit; cursor: pointer; }
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; border-radius: 10px; padding: 11px 18px;
+         border: 1px solid var(--line-strong); background: var(--surface); color: var(--ink); font-weight: 550; }
+  .btn:hover { background: var(--sunken); }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .btn.primary:hover { filter: brightness(1.07); }
+  @media (prefers-color-scheme: dark) { .btn.primary { color: #0f1420; } }
+  .btn.quiet { border-color: transparent; background: transparent; color: var(--ink-2); padding: 8px 10px; }
+  .btn.quiet:hover { background: var(--sunken); }
+  .btn:disabled { opacity: .45; cursor: default; }
+  :focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; border-radius: 6px; }
+  .kbd { font: 600 .72rem ui-monospace, SFMono-Regular, Menlo, monospace; border: 1px solid var(--line-strong);
+         border-bottom-width: 2px; border-radius: 5px; padding: 0 5px; color: var(--muted); background: var(--surface); }
+  input[type=text] { font: inherit; width: 100%; padding: 11px 13px; border-radius: 10px; border: 1px solid var(--line-strong);
+                     background: var(--surface); color: var(--ink); }
+  details > summary { cursor: pointer; font-weight: 600; list-style: none; }
+  details > summary::-webkit-details-marker { display: none; }
+  details > summary::before { content: "\25B8"; display: inline-block; width: 1.1em; color: var(--muted); transition: transform .15s; }
+  details[open] > summary::before { transform: rotate(90deg); }
+
+  /* welcome */
+  .hero h1 { font-size: clamp(1.6rem, 4.2vw, 2.15rem); letter-spacing: -.02em; margin: 6px 0 12px; }
+  .lead { font-size: 1.08rem; color: var(--ink-2); max-width: 62ch; }
+  .facts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  @media (max-width: 640px) { .facts { grid-template-columns: 1fr; } }
+  .fact { display: flex; gap: 12px; align-items: flex-start; padding: 14px; border-radius: 12px; background: var(--surface); border: 1px solid var(--line); }
+  .fact .ico { flex: none; width: 34px; height: 34px; border-radius: 9px; background: var(--accent-soft); color: var(--accent);
+               display: grid; place-items: center; }
+  .fact b { display: block; font-size: .95rem; }
+  .fact span { font-size: .875rem; color: var(--muted); }
+  .rules { margin: 0; padding: 0; list-style: none; }
+  .rules li { display: grid; grid-template-columns: 7.2em 1fr; gap: 10px; padding: 9px 0; border-top: 1px solid var(--line); }
+  .rules li:first-child { border-top: 0; }
+  .pill { display: inline-block; font-size: .8rem; font-weight: 700; padding: 2px 10px; border-radius: 999px; text-align: center; height: fit-content; }
+  .pill.ok { background: var(--ok-bg); color: var(--ok); } .pill.part { background: var(--part-bg); color: var(--part); }
+  .pill.bad { background: var(--bad-bg); color: var(--bad); }
+  .examples { display: grid; gap: 12px; }
+  .ex { border: 1px solid var(--line); border-radius: 12px; padding: 14px; background: var(--sunken); }
+  .ex .sit { font-weight: 600; margin-bottom: 8px; }
+  .ex .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; }
+  @media (max-width: 520px) { .ex .pair { grid-template-columns: 1fr; } }
+  .ex .pair div { border-radius: 8px; padding: 8px 10px; font-size: .92rem; }
+  .ex .pair .r { background: var(--ref-bg); color: var(--ref-ink); } .ex .pair .p { background: var(--pred-bg); color: var(--pred-ink); }
+  .ex .pair small { display: block; font-size: .7rem; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; opacity: .85; }
+  .ex .why { font-size: .92rem; color: var(--ink-2); }
+  .start-row { display: flex; gap: 10px; align-items: stretch; }
+  .start-row input { flex: 1; }
+  @media (max-width: 520px) { .start-row { flex-direction: column; } }
+  .resume { display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: center; padding: 14px 16px; border-radius: 12px;
+            background: var(--accent-soft); border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent); }
+  .resume p { margin: 0; flex: 1 1 260px; }
+
+  /* item */
+  .q-meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+  .chip { font-size: .8rem; padding: 3px 10px; border-radius: 999px; background: var(--sunken); color: var(--ink-2); border: 1px solid var(--line); }
+  .chip.ok { color: var(--ok); background: var(--ok-bg); border-color: transparent; }
+  .chip.bad { color: var(--bad); background: var(--bad-bg); border-color: transparent; }
+  .situation { font-size: 1.06rem; }
+  .ctx { display: grid; grid-template-columns: auto 1fr; gap: 6px 14px; margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--line); }
+  .ctx dt { font-size: .75rem; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); padding-top: 2px; }
+  .ctx dd { margin: 0; }
+  .tool { font-weight: 650; }
+  #situation:focus { outline: none; }
+  .compare { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px; }
+  @media (max-width: 600px) { .compare { grid-template-columns: 1fr; } }
+  .ans { border-radius: 12px; padding: 14px 16px; }
+  .ans.ref { background: var(--ref-bg); color: var(--ref-ink); } .ans.pred { background: var(--pred-bg); color: var(--pred-ink); }
+  .ans .head { font-size: .75rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+  .ans .sub { font-size: .8rem; opacity: .85; margin-bottom: 8px; }
+  .ans dl { margin: 0; }
+  .ans dt { font-size: .8rem; opacity: .85; }
+  .ans dd { margin: 0 0 8px; font-weight: 600; color: var(--ink); word-break: break-word; }
+  .ans dd:last-child { margin-bottom: 0; }
+  .ask { margin: 22px 0 10px; font-weight: 650; }
+  .choices { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  @media (max-width: 600px) { .choices { grid-template-columns: 1fr; } }
+  .choice { text-align: left; border-radius: 12px; padding: 13px 14px; background: var(--surface); border: 1.5px solid var(--line-strong);
+            display: grid; grid-template-columns: 1fr auto; gap: 2px 8px; transition: background .12s, border-color .12s; }
+  .choice b { font-size: 1.02rem; } .choice .kbd { align-self: start; }
+  .choice span.d { grid-column: 1 / -1; font-size: .84rem; color: var(--muted); line-height: 1.4; }
+  .choice.ok b { color: var(--ok); } .choice.part b { color: var(--part); } .choice.bad b { color: var(--bad); }
+  .choice.ok:hover, .choice.ok.chosen { border-color: var(--ok); background: var(--ok-bg); }
+  .choice.part:hover, .choice.part.chosen { border-color: var(--part); background: var(--part-bg); }
+  .choice.bad:hover, .choice.bad.chosen { border-color: var(--bad); background: var(--bad-bg); }
+  .choice.ok.chosen { box-shadow: inset 0 0 0 1px var(--ok); } .choice.part.chosen { box-shadow: inset 0 0 0 1px var(--part); }
+  .choice.bad.chosen { box-shadow: inset 0 0 0 1px var(--bad); }
+  .note { margin-top: 14px; }
+  .note summary { font-weight: 500; color: var(--ink-2); font-size: .92rem; }
+  .note input { margin-top: 8px; }
+  .nav { display: flex; align-items: center; gap: 8px; margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--line); }
+  .hint { font-size: .8rem; color: var(--muted); }
+  @media (max-width: 600px) { .hint { display: none; } }
+
+  /* rules panel + done */
+  .done-icon { width: 56px; height: 56px; border-radius: 50%; background: var(--ok-bg); color: var(--ok); display: grid; place-items: center; }
+  .status { font-weight: 600; }
+  .status.ok { color: var(--ok); } .status.bad { color: var(--bad); }
   textarea { width: 100%; min-height: 120px; font: 13px ui-monospace, monospace; border-radius: 10px; padding: 8px;
-             background: var(--card); color: var(--ink); border: 1px solid var(--line); }
+             background: var(--surface); color: var(--ink); border: 1px solid var(--line); }
+
+  /* toast */
+  .toast { position: fixed; left: 50%; bottom: 20px; transform: translate(-50%, 20px); opacity: 0; pointer-events: none;
+           background: var(--ink); color: var(--bg); padding: 11px 16px; border-radius: 12px; font-size: .92rem; max-width: calc(100% - 32px);
+           box-shadow: 0 6px 24px rgba(0, 0, 0, .18); transition: opacity .2s, transform .2s; z-index: 10; }
+  .toast.show { opacity: 1; transform: translate(-50%, 0); }
+  footer { max-width: 780px; margin: 0 auto; padding: 0 16px 32px; font-size: .8rem; color: var(--muted); }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
 </head>
 <body>
+
+<header>
+  <div class="bar-inner">
+    <div class="brand">
+      <svg width="26" height="26" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" fill="var(--accent)"/>
+        <path d="M9 16.5l4.5 4.5L23 11.5" fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <span>Tool Argument Check</span>
+    </div>
+    <div class="spacer"></div>
+    <div class="meter hidden" id="meter" aria-hidden="true">
+      <div class="track"><div class="fill" id="progress"></div></div>
+      <span class="num" id="meterNum"></span>
+    </div>
+    <button class="btn quiet hidden" id="help" type="button" aria-label="How to judge">How to judge</button>
+  </div>
+</header>
+
 <main>
 
-<!-- Start screen -->
-<section id="start">
-  <h1>Tool argument check</h1>
-  <p class="muted">About 30 minutes for 150 short questions. Your progress is saved in this browser, so you can stop and continue later.</p>
+<!-- Welcome -->
+<section id="start" class="stack">
+  <div class="hero">
+    <div class="eyebrow">University research study</div>
+    <h1>Help check what an AI assistant fills in</h1>
+    <p class="lead">An AI assistant on smart glasses sees what the user sees and sometimes acts on its own, for example by
+      searching the web or adding a calendar entry. We want to know how often <b>what it fills in</b> is actually right.
+      You compare its answer with a reference answer and choose <b>Correct</b>, <b>Partial</b> or <b>Incorrect</b>.</p>
+  </div>
+
+  <div class="facts">
+    <div class="fact"><div class="ico" aria-hidden="true">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div>
+      <div><b>Any amount helps</b><span>Each question takes about 10 seconds. Even 15 or 20 help; if you can, please do 50 (about 10 minutes).</span></div></div>
+    <div class="fact"><div class="ico" aria-hidden="true">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l4 4L19 7"/></svg></div>
+      <div><b>Sent automatically</b><span>Your answers are sent as you go. There is nothing to submit at the end.</span></div></div>
+    <div class="fact"><div class="ico" aria-hidden="true">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="10" width="14" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></div>
+      <div><b>No sign-up</b><span>No account and no personal details. A nickname is optional.</span></div></div>
+  </div>
 
   <div class="card">
-    <h2 style="margin-top:0">What you do</h2>
-    <p>An AI assistant on smart glasses sees a situation and calls a tool, for example a web search or a calendar entry.
-       The tool is always the right one. You only judge <b>what it filled in</b>: compare the <b>model's answer</b>
-       with the <b>reference answer</b>, given the situation.</p>
+    <h2 style="font-size:1.15rem;margin-bottom:6px">How to judge</h2>
+    <p class="muted small">The tool is always the right one. You only judge <b>what the assistant filled in</b>, compared with
+      the reference answer and given the situation.</p>
     <ul class="rules">
-      <li><span class="tag ok">Correct</span> would help the user just as well. Different words for the same thing count as correct.</li>
-      <li><span class="tag part">Partial</span> same topic, but asks for something different or narrower, or one of several fields is wrong.</li>
-      <li><span class="tag bad">Incorrect</span> a different topic, or would not help the user.</li>
+      <li><span class="pill ok">Correct</span><span>would help the user just as well. Different words for the same thing count as correct.</span></li>
+      <li><span class="pill part">Partial</span><span>same topic, but asks for something different or narrower, or one of several fields is wrong.</span></li>
+      <li><span class="pill bad">Incorrect</span><span>a different topic, or would not help the user.</span></li>
     </ul>
-    <p class="muted">&#10216;output of &hellip;&#10217; means the value is taken from an earlier step, e.g. the user's GPS position.</p>
-    <p class="muted">Do not overthink it: go with your first impression. Keys <span class="kbd">1</span> <span class="kbd">2</span> <span class="kbd">3</span> work too.</p>
-    <p class="muted hidden" id="privacy">Your answers and the name you type below are sent automatically to a Google Form
-       of the person who asked you (every 10 answers and when you finish), so there is nothing to send by hand.
-       Nothing else is collected.</p>
+    <p class="muted small" style="margin:10px 0 0">&#10216;output of &hellip;&#10217; means the value is taken from an earlier step,
+      e.g. the user's GPS position. Do not overthink it: go with your first impression.</p>
   </div>
 
   <div class="card">
-    <h2 style="margin-top:0">Three examples</h2>
-    <div class="ex"><b>Museum exhibit "Ancient Egypt Artifacts"</b>, web search.<br>
-      Reference: <i>Ancient Egyptian artifacts and cultural significance</i> &middot; Model: <i>Ancient Egypt Artifacts</i><br>
-      &rarr; <span class="tag ok">Correct</span> same search, different words.</div>
-    <div class="ex"><b>Rose garden, gardening fan</b>, web search.<br>
-      Reference: <i>rose care and popular varieties</i> &middot; Model: <i>rose blooming times and details</i><br>
-      &rarr; <span class="tag part">Partial</span> same topic, different information.</div>
-    <div class="ex"><b>Botanical garden, no specific plant named</b>, Wikipedia search.<br>
-      Reference: <i>Ghost Orchid</i> &middot; Model: <i>Hibiscus plant</i><br>
-      &rarr; <span class="tag bad">Incorrect</span> a different plant.</div>
-  </div>
-
-  <div class="card">
-    <label for="name"><b>Your first name or initials</b> (only used to name your results file)</label>
-    <input type="text" id="name" maxlength="30" autocomplete="off" placeholder="e.g. Maria">
-    <div class="row" style="margin-top:12px">
-      <button class="primary" id="go">Start</button>
-      <span class="muted" id="resume"></span>
+    <h2 style="font-size:1.15rem;margin-bottom:12px">Three examples</h2>
+    <div class="examples">
+      <div class="ex"><div class="sit">Museum exhibit &ldquo;Ancient Egypt Artifacts&rdquo; &middot; web search</div>
+        <div class="pair"><div class="r"><small>Reference</small>Ancient Egyptian artifacts and cultural significance</div>
+          <div class="p"><small>Assistant</small>Ancient Egypt Artifacts</div></div>
+        <div class="why"><span class="pill ok">Correct</span> same search, different words.</div></div>
+      <div class="ex"><div class="sit">Rose garden, gardening fan &middot; web search</div>
+        <div class="pair"><div class="r"><small>Reference</small>rose care and popular varieties</div>
+          <div class="p"><small>Assistant</small>rose blooming times and details</div></div>
+        <div class="why"><span class="pill part">Partial</span> same topic, different information.</div></div>
+      <div class="ex"><div class="sit">Botanical garden, no specific plant named &middot; Wikipedia search</div>
+        <div class="pair"><div class="r"><small>Reference</small>Ghost Orchid</div>
+          <div class="p"><small>Assistant</small>Hibiscus plant</div></div>
+        <div class="why"><span class="pill bad">Incorrect</span> a different plant.</div></div>
     </div>
   </div>
+
+  <div class="resume hidden" id="resume" role="status">
+    <p id="resumeText"></p>
+    <button class="btn primary" id="resumeGo" type="button">Continue</button>
+    <button class="btn quiet" id="resumeNew" type="button">Start as someone else</button>
+  </div>
+
+  <div class="card" id="startCard">
+    <label for="name" style="display:block;font-weight:650;margin-bottom:4px">Nickname <span class="muted" style="font-weight:400">(optional)</span></label>
+    <p class="muted small">Lets you continue later on this device. Please do not use your full name.</p>
+    <div class="start-row">
+      <input type="text" id="name" maxlength="30" autocomplete="off" spellcheck="false" placeholder="e.g. sunflower42">
+      <button class="btn primary" id="go" type="button">Start</button>
+    </div>
+    <p class="muted small" id="nameHint" style="margin:8px 0 0"></p>
+  </div>
+
+  <details class="card" id="privacy">
+    <summary>What is collected, and how it is used</summary>
+    <div style="margin-top:10px" class="small">
+      <p>For each question: your choice (Correct, Partial or Incorrect), an optional note and the time of the answer,
+        together with your nickname and a random code that keeps people with the same nickname apart.
+        <span id="privacyDest"></span> Nothing else is collected: no account, no email address, no cookies.</p>
+      <p>Your progress is also kept in this browser so you can continue later. Taking part is voluntary and you can stop at
+        any time. The answers are used only to measure how well an AI assistant fills in tool calls in a research paper;
+        only aggregated results are published.</p>
+    </div>
+  </details>
 </section>
 
-<!-- Item screen -->
+<!-- Question -->
 <section id="item" class="hidden">
-  <div class="row">
-    <span class="muted" id="count"></span><span class="spacer"></span>
-    <button id="help" title="Show the rules">Rules</button>
-    <button id="finishEarly" title="Stop here; you can continue later">Finish for now</button>
+  <div class="q-meta">
+    <span class="chip" id="count"></span>
+    <span class="chip" id="sync" role="status" aria-live="polite"></span>
   </div>
-  <div class="bar"><div id="progress"></div></div>
-  <div class="muted small" id="sync"></div>
 
   <div class="card">
     <div class="label">Situation</div>
-    <div id="situation"></div>
-    <div id="personaBox" style="margin-top:10px">
-      <div class="label">About the user</div>
-      <div id="persona"></div>
-    </div>
-    <div style="margin-top:10px">
-      <div class="label">Tool</div>
-      <span class="tool" id="tool"></span> <span class="muted" id="desc"></span>
-    </div>
+    <h2 class="situation" id="situation" tabindex="-1" style="font-weight:500"></h2>
+    <dl class="ctx">
+      <dt id="personaLabel">The user</dt><dd id="persona"></dd>
+      <dt>Tool</dt><dd><span class="tool" id="tool"></span> <span class="muted" id="desc"></span></dd>
+    </dl>
   </div>
 
-  <div class="grid">
-    <div class="ans ref"><div class="label" style="color:inherit">Reference answer</div><dl id="ref"></dl></div>
-    <div class="ans pred"><div class="label" style="color:inherit">Model answer</div><dl id="pred"></dl></div>
+  <div class="compare">
+    <div class="ans ref"><div class="head">Reference answer</div><div class="sub">the expected answer</div><dl id="ref"></dl></div>
+    <div class="ans pred"><div class="head">Assistant's answer</div><div class="sub">what it actually filled in</div><dl id="pred"></dl></div>
   </div>
 
-  <div class="buttons">
-    <button class="b-ok" data-label="correct">Correct <span class="kbd">1</span></button>
-    <button class="b-part" data-label="partial">Partial <span class="kbd">2</span></button>
-    <button class="b-bad" data-label="incorrect">Incorrect <span class="kbd">3</span></button>
+  <p class="ask" id="askLabel">Would the assistant's answer help the user as well as the reference?</p>
+  <div class="choices" role="group" aria-labelledby="askLabel">
+    <button class="choice ok" data-label="correct" type="button"><b>Correct</b><span class="kbd">1</span>
+      <span class="d">would help just as well; different words are fine</span></button>
+    <button class="choice part" data-label="partial" type="button"><b>Partial</b><span class="kbd">2</span>
+      <span class="d">same topic, but different or narrower, or a field is wrong</span></button>
+    <button class="choice bad" data-label="incorrect" type="button"><b>Incorrect</b><span class="kbd">3</span>
+      <span class="d">a different topic, or would not help</span></button>
   </div>
-  <div style="margin-top:12px">
-    <input type="text" id="note" placeholder="Optional note, e.g. 'reference has a typo'">
-  </div>
-  <div class="row" style="margin-top:12px">
-    <button id="back">&larr; Back</button>
+
+  <details class="note" id="noteBox">
+    <summary>Add a note (optional)</summary>
+    <input type="text" id="note" maxlength="300" placeholder="e.g. 'the reference has a typo'">
+  </details>
+
+  <div class="nav">
+    <button class="btn" id="back" type="button">&larr; Back</button>
+    <span class="hint">Keys <span class="kbd">1</span> <span class="kbd">2</span> <span class="kbd">3</span> to answer, <span class="kbd">&larr;</span> to go back</span>
+    <div class="spacer"></div>
+    <button class="btn" id="finishEarly" type="button">I'm done for now</button>
   </div>
 </section>
 
-<!-- Rules overlay -->
+<!-- How to judge (from a question) -->
 <section id="rules" class="hidden">
   <div class="card">
-    <h2 style="margin-top:0">Rules</h2>
+    <h2 style="font-size:1.15rem;margin-bottom:6px">How to judge</h2>
     <ul class="rules">
-      <li><span class="tag ok">Correct</span> would help the user just as well (different words for the same thing are fine).</li>
-      <li><span class="tag part">Partial</span> same topic but different or narrower information, or one of several fields wrong.</li>
-      <li><span class="tag bad">Incorrect</span> a different topic, or would not help the user.</li>
+      <li><span class="pill ok">Correct</span><span>would help the user just as well (different words for the same thing are fine).</span></li>
+      <li><span class="pill part">Partial</span><span>same topic but different or narrower information, or one of several fields wrong.</span></li>
+      <li><span class="pill bad">Incorrect</span><span>a different topic, or would not help the user.</span></li>
     </ul>
-    <p class="muted">Only judge what was filled in, not whether the tool itself was a good idea.
-       &#10216;output of &hellip;&#10217; means the value is taken from an earlier step, e.g. the user's GPS position.</p>
-    <button class="primary" id="closeRules">Back to the question</button>
+    <p class="muted small" style="margin:10px 0 16px">Only judge what was filled in, not whether the tool itself was a good idea.
+      &#10216;output of &hellip;&#10217; means the value is taken from an earlier step, e.g. the user's GPS position.</p>
+    <button class="btn primary" id="closeRules" type="button">Back to the question</button>
   </div>
 </section>
 
-<!-- Done screen -->
-<section id="done" class="hidden">
-  <h1>Thank you!</h1>
-  <p id="doneText"></p>
-  <div class="card" id="sentCard">
-    <p id="sentText"></p>
-    <button class="primary hidden" id="retry">Try sending again</button>
+<!-- Done -->
+<section id="done" class="hidden stack">
+  <div class="card stack" style="text-align:center;padding:32px 20px">
+    <div class="done-icon" style="margin:0 auto" aria-hidden="true">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></div>
+    <h1 style="font-size:1.6rem">Thank you!</h1>
+    <p id="doneText" class="lead" style="margin:0 auto"></p>
+    <p class="status" id="sentText" role="status" aria-live="polite"></p>
+    <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+      <button class="btn primary hidden" id="retry" type="button">Try sending again</button>
+      <button class="btn" id="review" type="button">Continue answering</button>
+    </div>
   </div>
   <details class="card" id="manual">
     <summary id="manualTitle">Problems? Send your answers by hand instead</summary>
-    <p>Download your answers and send the file to the person who asked you.</p>
-    <button class="primary" id="download">Download my answers</button>
-    <p style="margin-top:16px"><b>Or:</b> copy the text below and paste it into a message.</p>
-    <button id="copy">Copy answers</button>
-    <textarea id="csvBox" readonly></textarea>
+    <div style="margin-top:12px">
+      <p>Download your answers and send the file to the person who shared this page with you.</p>
+      <button class="btn primary" id="download" type="button">Download my answers</button>
+      <p style="margin-top:16px"><b>Or</b> copy the text below and paste it into a message.</p>
+      <button class="btn" id="copy" type="button">Copy answers</button>
+      <textarea id="csvBox" readonly style="margin-top:10px" aria-label="Your answers as text"></textarea>
+    </div>
   </details>
-  <button id="review">&larr; Go back to the questions</button>
 </section>
 
 </main>
+
+<footer>Research use only. No account, no cookies; your progress is stored only in this browser.</footer>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
 <script src="items.js"></script>
 <script>
-// Automatic collection: paste the Google Form's pre-filled link here (three short-answer/paragraph questions in this
-// order: name, answers, status; fill each with "x" when making the link). Empty = no sending, download only.
+// Automatic collection: the Google Form's pre-filled link (three questions in this order: name, answers, status; each
+// filled with "x" when making the link). Empty = no sending, download only.
 var FORM_LINK = "https://docs.google.com/forms/d/e/1FAIpQLSecphf41bETNNmk4fJO5hizay4giLTNoalBIcsm6yh15fLwxg/viewform?usp=pp_url&entry.556024990=x&entry.9193450=x&entry.365110550=x";
 
 (function () {
   "use strict";
   var ITEMS = window.ITEMS || [];
+  var N = ITEMS.length;
   var $ = function (id) { return document.getElementById(id); };
-  var state = null, pos = 0;
+  var state = null, stateKey = null, pos = 0, sending = false, toastTimer = null;
+  var MILESTONES = { 10: "10 answers sent. Thank you!", 20: "20 answers sent. That already helps a lot!",
+                     50: "50 answers sent. That covers the questions we need most. Anything more is a bonus!", 100: "100 answers sent. Two thirds done!" };
 
   var FORM = (function () {
     var ids = FORM_LINK.match(/entry\.\d+/g);
     if (!FORM_LINK || !ids || ids.length < 3) return null;
     return { action: FORM_LINK.split("?")[0].replace(/\/viewform$/, "/formResponse"), ids: ids.slice(0, 3) };
   })();
-  var sending = false;
-
-  function payload(status) {
-    var n = Object.keys(state.labels).length, p = new URLSearchParams();
-    p.append(FORM.ids[0], state.name);
-    p.append(FORM.ids[1], csv());
-    p.append(FORM.ids[2], status + " " + n + "/" + ITEMS.length);
-    return p;
-  }
-  function syncText() {
-    if (!FORM || !state) return;
-    var n = Object.keys(state.labels).length, s = state.sent || 0, el = $("sync");
-    el.className = "muted small";
-    if (state.sendFailed) { el.textContent = "Could not send (offline?). Your answers are saved here and will be sent with the next answer."; el.className = "small sent-bad"; }
-    else if (s === 0) el.textContent = "Answers are sent automatically every 10 answers.";
-    else el.textContent = s + " answers sent automatically" + (n > s ? " · " + (n - s) + " waiting for the next send" : "") + ".";
-  }
-  // fetch in no-cors mode: Google returns an opaque response, so only network failures are visible
-  function send(status, done) {
-    if (!FORM || sending) return;
-    var n = Object.keys(state.labels).length;
-    sending = true;
-    fetch(FORM.action, { method: "POST", mode: "no-cors", body: payload(status) }).then(function () {
-      sending = false; state.sent = n; state.sendFailed = false; save(); syncText(); if (done) done(true);
-    }, function () {
-      sending = false; state.sendFailed = true; save(); syncText(); if (done) done(false);
-    });
-  }
-  // closing the tab: send whatever has not been sent yet
-  function beacon() {
-    if (!FORM || !state || !navigator.sendBeacon) return;
-    var n = Object.keys(state.labels).length;
-    if (n === 0 || n === state.sent) return;
-    var blob = new Blob([payload(n === ITEMS.length ? "complete" : "progress").toString()],
-                        { type: "application/x-www-form-urlencoded" });
-    if (navigator.sendBeacon(FORM.action, blob)) { state.sent = n; save(); }
-  }
 
   // storage that survives private windows failing
   var store = {
@@ -252,69 +384,153 @@ var FORM_LINK = "https://docs.google.com/forms/d/e/1FAIpQLSecphf41bETNNmk4fJO5hi
     set: function (k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
   };
 
-  // deterministic shuffle per annotator name (each person gets their own order)
-  function seededOrder(name) {
+  // deterministic shuffle per annotator (each person gets their own order)
+  function seededOrder(seed) {
     var h = 2166136261;
-    for (var i = 0; i < name.length; i++) { h ^= name.charCodeAt(i); h = Math.imul(h, 16777619); }
+    for (var i = 0; i < seed.length; i++) { h ^= seed.charCodeAt(i); h = Math.imul(h, 16777619); }
     var rnd = function () { h ^= h << 13; h ^= h >>> 17; h ^= h << 5; return ((h >>> 0) % 1000000) / 1000000; };
     var idx = ITEMS.map(function (_, i) { return i; });
     for (var j = idx.length - 1; j > 0; j--) { var k = Math.floor(rnd() * (j + 1)); var t = idx[j]; idx[j] = idx[k]; idx[k] = t; }
     return idx;
   }
+  // Order for new participants (see ANALYSIS_PLAN.md): the items on which the first two annotators disagreed come
+  // first (those that change the usable/incorrect verdict before the others), with attention checks (items whose
+  // answer is identical to the reference, so the answer is "correct") at fixed early positions; then the remaining
+  // items; the 11 items shown or discussed as examples last. Shuffled within each group per participant.
+  var PRIORITY_A = ["h005","h016","h032","h038","h040","h055","h083","h087","h105","h106","h111","h112","h114","h117","h124","h128","h139","h146","h148"];
+  var PRIORITY_B = ["h012","h022","h033","h037","h042","h045","h048","h049","h062","h075","h076","h078","h091","h092","h098","h115","h116","h119","h121","h122","h125","h127","h129","h132","h133","h135","h137","h141","h149"];
+  var CHECKS = ["h007","h010","h018","h020","h039","h044","h052","h053","h064","h065","h066","h068","h072","h074","h081","h085","h088","h093","h099","h102","h118","h143","h145"];
+  var LAST = ["h001","h002","h006","h008","h014","h015","h019","h021","h046","h077","h079"];
+  var CHECK_POS = [2, 6, 11, 17, 25, 34, 45];
+  function priorityOrder(seed) {
+    var h = 2166136261;
+    for (var i = 0; i < seed.length; i++) { h ^= seed.charCodeAt(i); h = Math.imul(h, 16777619); }
+    var rnd = function () { h ^= h << 13; h ^= h >>> 17; h ^= h << 5; return ((h >>> 0) % 1000000) / 1000000; };
+    var shuffle = function (a) { a = a.slice(); for (var j = a.length - 1; j > 0; j--) { var k = Math.floor(rnd() * (j + 1)); var t = a[j]; a[j] = a[k]; a[k] = t; } return a; };
+    var index = {}; ITEMS.forEach(function (it, i) { index[it.id] = i; });
+    var known = function (a) { return a.filter(function (id) { return id in index; }); };
+    var used = {}; PRIORITY_A.concat(PRIORITY_B, CHECKS, LAST).forEach(function (id) { used[id] = true; });
+    var head = shuffle(known(PRIORITY_A)).concat(shuffle(known(PRIORITY_B)));
+    var checks = shuffle(known(CHECKS));
+    CHECK_POS.forEach(function (p) { if (checks.length) head.splice(Math.min(p, head.length), 0, checks.shift()); });
+    var others = ITEMS.map(function (it) { return it.id; }).filter(function (id) { return !used[id]; });
+    var ids = head.concat(shuffle(checks.concat(others)), shuffle(known(LAST)));
+    return ids.map(function (id) { return index[id]; });
+  }
+  function randomCode() {
+    var a = "abcdefghjkmnpqrstuvwxyz23456789", s = "";
+    for (var i = 0; i < 5; i++) s += a[Math.floor(Math.random() * a.length)];
+    return s;
+  }
+  function nameKey(name) { return "argcheck:" + name.toLowerCase(); }
+  // states from the first version of the page have no code; their name is sent unchanged
+  function annotator() { return (state.name || "anonymous") + (state.pid ? " [" + state.pid + "]" : ""); }
+  function answered() { return Object.keys(state.labels).length; }
+  function save() { store.set(stateKey, state); store.set("argcheck:last", stateKey); }
 
-  function key(name) { return "argcheck:" + name.toLowerCase(); }
-  function save() { store.set(key(state.name), state); }
   function show(id) {
     ["start", "item", "rules", "done"].forEach(function (s) { $(s).classList.toggle("hidden", s !== id); });
+    var inTask = id !== "start";
+    $("meter").classList.toggle("hidden", !inTask);
+    $("help").classList.toggle("hidden", id !== "item");
     window.scrollTo(0, 0);
   }
+  function toast(msg) {
+    var t = $("toast"); t.textContent = msg; t.classList.add("show");
+    clearTimeout(toastTimer); toastTimer = setTimeout(function () { t.classList.remove("show"); }, 4200);
+  }
 
+  // ---- sending (Google Form, no-cors: only network failures are visible) ----
+  function payload(status) {
+    var p = new URLSearchParams();
+    p.append(FORM.ids[0], annotator());
+    p.append(FORM.ids[1], csv());
+    p.append(FORM.ids[2], status + " " + answered() + "/" + N);
+    return p;
+  }
+  function syncText() {
+    var el = $("sync");
+    if (!FORM || !state) { el.classList.add("hidden"); return; }
+    var n = answered(), s = state.sent || 0;
+    el.className = "chip";
+    if (state.sendFailed) { el.className = "chip bad"; el.textContent = "Not sent yet (offline?) · will retry"; }
+    else if (s === 0) el.textContent = "Sent automatically every 10 answers";
+    else { el.className = "chip ok"; el.textContent = "✓ " + s + " sent" + (n > s ? " · " + (n - s) + " waiting" : ""); }
+  }
+  function send(status, done) {
+    if (!FORM || sending) return;
+    var n = answered();
+    sending = true;
+    fetch(FORM.action, { method: "POST", mode: "no-cors", body: payload(status) }).then(function () {
+      sending = false; state.sent = n; state.sendFailed = false; save(); syncText(); if (done) done(true);
+    }, function () {
+      sending = false; state.sendFailed = true; save(); syncText(); if (done) done(false);
+    });
+  }
+  function beacon() {  // closing or hiding the tab: send whatever has not been sent yet
+    if (!FORM || !state || !navigator.sendBeacon) return;
+    var n = answered();
+    if (n === 0 || n === state.sent) return;
+    var blob = new Blob([payload(n === N ? "complete" : "progress").toString()], { type: "application/x-www-form-urlencoded" });
+    if (navigator.sendBeacon(FORM.action, blob)) { state.sent = n; save(); }
+  }
+
+  // ---- rendering ----
+  function pretty(tool) { var s = String(tool).replace(/_/g, " "); return s.charAt(0).toUpperCase() + s.slice(1); }
   function fill(dl, obj) {
     dl.innerHTML = "";
     var keys = Object.keys(obj || {});
-    if (!keys.length) { var dd = document.createElement("dd"); dd.textContent = "(nothing filled in)"; dl.appendChild(dd); return; }
+    if (!keys.length) { var e = document.createElement("dd"); e.textContent = "(nothing filled in)"; dl.appendChild(e); return; }
     keys.forEach(function (k) {
       var dt = document.createElement("dt"); dt.textContent = k.replace(/_/g, " ");
       var dd = document.createElement("dd"); var v = obj[k];
       var txt = (v === "" || v === null) ? "(empty)" : (typeof v === "object" ? JSON.stringify(v) : String(v));
       // $RESULT(tool.field) = value taken from an earlier tool call
       dd.textContent = txt.replace(/\$RESULT\((\w+)\.(\w+)\)/g, function (_, t, f) {
-        return "\u27e8output of " + t.replace(/_/g, " ") + ": " + f.replace(/_/g, " ") + "\u27e9"; });
+        return "⟨output of " + t.replace(/_/g, " ") + ": " + f.replace(/_/g, " ") + "⟩"; });
       dl.appendChild(dt); dl.appendChild(dd);
     });
   }
-
+  function meter() {
+    var n = answered();
+    $("progress").style.width = (100 * n / N) + "%";
+    $("meterNum").textContent = n + " / " + N;
+  }
   function render() {
-    var n = ITEMS.length, it = ITEMS[state.order[pos]];
-    var answered = Object.keys(state.labels).length;
-    $("count").textContent = "Question " + (pos + 1) + " of " + n + " · " + answered + " answered";
-    $("progress").style.width = (100 * answered / n) + "%";
+    var it = ITEMS[state.order[pos]];
+    $("count").textContent = "Question " + (pos + 1) + " of " + N;
+    meter();
     $("situation").textContent = it.situation;
-    $("personaBox").classList.toggle("hidden", !it.persona);
+    var hasP = !!it.persona;
+    $("personaLabel").classList.toggle("hidden", !hasP); $("persona").classList.toggle("hidden", !hasP);
     $("persona").textContent = it.persona || "";
-    $("tool").textContent = it.tool;
+    $("tool").textContent = pretty(it.tool);
     $("desc").textContent = it.description ? "— " + it.description : "";
     fill($("ref"), it.reference); fill($("pred"), it.predicted);
     var cur = state.labels[it.id];
-    document.querySelectorAll(".buttons button").forEach(function (b) {
-      b.classList.toggle("chosen", cur && cur.label === b.dataset.label);
+    document.querySelectorAll(".choice").forEach(function (b) {
+      var on = !!(cur && cur.label === b.dataset.label);
+      b.classList.toggle("chosen", on); b.setAttribute("aria-pressed", on ? "true" : "false");
     });
     $("note").value = (cur && cur.note) || "";
+    $("noteBox").open = !!(cur && cur.note);
     $("back").disabled = pos === 0;
     syncText();
   }
 
   function answer(label) {
     var it = ITEMS[state.order[pos]];
+    var first = !state.labels[it.id];
     state.labels[it.id] = { label: label, note: $("note").value.trim(), time: new Date().toISOString() };
     state.pos = pos;
     save();
-    var n = Object.keys(state.labels).length;
-    if (n < ITEMS.length && (n % 10 === 0 || state.sendFailed)) send("progress");
+    var n = answered();
+    if (n < N && (n % 10 === 0 || state.sendFailed)) send("progress");
+    if (first && MILESTONES[n] && FORM) toast(MILESTONES[n] + " Stop any time with “I'm done for now”.");
     var next = -1;
-    for (var i = pos + 1; i < ITEMS.length; i++) { if (!state.labels[ITEMS[state.order[i]].id]) { next = i; break; } }
-    if (next < 0) { for (var j = 0; j < ITEMS.length; j++) { if (!state.labels[ITEMS[state.order[j]].id]) { next = j; break; } } }
-    if (next < 0) { finish(); } else { pos = next; state.pos = pos; save(); render(); }
+    for (var i = pos + 1; i < N; i++) { if (!state.labels[ITEMS[state.order[i]].id]) { next = i; break; } }
+    if (next < 0) { for (var j = 0; j < N; j++) { if (!state.labels[ITEMS[state.order[j]].id]) { next = j; break; } } }
+    if (next < 0) { finish(); } else { pos = next; state.pos = pos; save(); render(); if (window.scrollY > 80) window.scrollTo(0, 0); $("situation").focus({ preventScroll: true }); }
   }
 
   function csv() {
@@ -322,27 +538,32 @@ var FORM_LINK = "https://docs.google.com/forms/d/e/1FAIpQLSecphf41bETNNmk4fJO5hi
     var lines = ["id,label,notes,annotator,time"];
     ITEMS.forEach(function (it) {
       var l = state.labels[it.id];
-      if (l) lines.push([it.id, l.label, esc(l.note), esc(state.name), l.time].join(","));
+      if (l) lines.push([it.id, l.label, esc(l.note), esc(annotator()), l.time].join(","));
     });
     return lines.join("\n") + "\n";
   }
 
   function finish() {
-    var n = Object.keys(state.labels).length, all = n === ITEMS.length;
-    $("doneText").textContent = all ? "You answered all " + n + " questions."
-      : "You answered " + n + " of " + ITEMS.length + " questions. Open this page again in the same browser and type the same name to continue.";
+    var n = answered(), all = n === N;
+    meter();
+    clearTimeout(toastTimer); $("toast").classList.remove("show");
+    $("doneText").textContent = all ? "You answered all " + N + " questions."
+      : n === 0 ? "You have not answered any questions yet."
+      : "You answered " + n + " of " + N + " questions, and every one of them helps." + (n < 50 ? " If you have a few more minutes, the first 50 are the ones we need most." : "") + " You can come back on this device and continue where you left off.";
+    $("review").textContent = all ? "Review my answers" : "Continue answering";
     $("csvBox").value = csv();
     $("retry").classList.add("hidden");
     if (!FORM) {
-      $("sentCard").classList.add("hidden");
+      $("sentText").textContent = "";
       $("manualTitle").textContent = "Send your answers";
       $("manual").open = true;
+    } else if (n === 0) {
+      $("sentText").textContent = "";
     } else {
-      $("sentText").className = "muted"; $("sentText").textContent = "Sending your answers…";
+      $("sentText").className = "status muted"; $("sentText").textContent = "Sending your answers…";
       var report = function (ok) {
-        $("sentText").className = ok ? "sent-ok" : "sent-bad";
-        $("sentText").textContent = ok ? (all ? "Your answers have been sent. Thank you, you can close this page."
-                                              : "Your answers so far have been sent.")
+        $("sentText").className = ok ? "status ok" : "status bad";
+        $("sentText").textContent = ok ? "✓ Your answers have been sent. You can close this page."
                                        : "Sending failed (are you offline?). Try again, or send the file by hand below.";
         $("retry").classList.toggle("hidden", ok);
         if (!ok) $("manual").open = true;
@@ -353,36 +574,45 @@ var FORM_LINK = "https://docs.google.com/forms/d/e/1FAIpQLSecphf41bETNNmk4fJO5hi
     show("done");
   }
 
-  $("go").addEventListener("click", function () {
-    var name = $("name").value.trim();
-    if (!name) { $("name").focus(); $("name").placeholder = "Please type a name or initials first"; return; }
-    state = store.get(key(name)) || { name: name, order: seededOrder(name), labels: {}, pos: 0 };
-    if (!state.order || state.order.length !== ITEMS.length) { state.order = seededOrder(name); }
-    pos = Math.min(state.pos || 0, ITEMS.length - 1);
+  function begin() {
+    if (!state.order || state.order.length !== N) state.order = seededOrder((state.name || "") + (state.pid || ""));
+    pos = Math.min(state.pos || 0, N - 1);
+    if (state.labels[ITEMS[state.order[pos]].id]) {  // resume at the first unanswered question
+      for (var i = 0; i < N; i++) { if (!state.labels[ITEMS[state.order[i]].id]) { pos = i; break; } }
+    }
     save(); show("item"); render();
-  });
+  }
+  function startFromName() {
+    var name = $("name").value.trim();
+    var existing = name ? store.get(nameKey(name)) : null;
+    if (existing) { state = existing; stateKey = nameKey(name); }
+    else {
+      state = { name: name, pid: randomCode(), labels: {}, pos: 0, sent: 0 };
+      state.order = priorityOrder(name + state.pid);
+      stateKey = name ? nameKey(name) : "argcheck:~" + state.pid;
+    }
+    begin();
+  }
+
+  // ---- wiring ----
+  $("go").addEventListener("click", startFromName);
+  $("name").addEventListener("keydown", function (e) { if (e.key === "Enter") startFromName(); });
   $("name").addEventListener("input", function () {
-    var s = store.get(key(this.value.trim()));
-    $("resume").textContent = s ? "Welcome back — " + Object.keys(s.labels).length + " answers saved." : "";
+    var s = store.get(nameKey(this.value.trim()));
+    $("nameHint").textContent = this.value.trim() && s ? "Welcome back! " + Object.keys(s.labels).length + " answers are saved under this nickname." : "";
   });
-  $("name").addEventListener("keydown", function (e) { if (e.key === "Enter") $("go").click(); });
-  document.querySelectorAll(".buttons button").forEach(function (b) {
-    b.addEventListener("click", function () { answer(b.dataset.label); });
-  });
+  document.querySelectorAll(".choice").forEach(function (b) { b.addEventListener("click", function () { answer(b.dataset.label); }); });
   $("back").addEventListener("click", function () { if (pos > 0) { pos--; state.pos = pos; save(); render(); } });
   $("help").addEventListener("click", function () { show("rules"); });
   $("closeRules").addEventListener("click", function () { show("item"); render(); });
   $("finishEarly").addEventListener("click", finish);
   $("retry").addEventListener("click", finish);
-  window.addEventListener("pagehide", beacon);
-  document.addEventListener("visibilitychange", function () { if (document.visibilityState === "hidden") beacon(); });
-  if (FORM) $("privacy").classList.remove("hidden");
-  $("review").addEventListener("click", function () { show("item"); render(); });
+  $("review").addEventListener("click", function () { begin(); });
   $("download").addEventListener("click", function () {
     var blob = new Blob([csv()], { type: "text/csv" });
     var a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
-    a.download = "labels_" + state.name.replace(/[^\w-]+/g, "_") + ".csv";
+    a.download = "labels_" + annotator().replace(/[^\w-]+/g, "_") + ".csv";
     document.body.appendChild(a); a.click(); a.remove();
   });
   $("copy").addEventListener("click", function () {
@@ -391,13 +621,36 @@ var FORM_LINK = "https://docs.google.com/forms/d/e/1FAIpQLSecphf41bETNNmk4fJO5hi
     if (navigator.clipboard) { navigator.clipboard.writeText(box.value).then(done, function () { document.execCommand("copy"); done(); }); }
     else { document.execCommand("copy"); done(); }
   });
+  $("resumeGo").addEventListener("click", function () { begin(); });
+  $("resumeNew").addEventListener("click", function () { $("resume").classList.add("hidden"); $("name").focus(); });
   document.addEventListener("keydown", function (e) {
-    if ($("item").classList.contains("hidden") || document.activeElement === $("note")) return;
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    var typing = /^(INPUT|TEXTAREA)$/.test(document.activeElement && document.activeElement.tagName);
+    if (!$("rules").classList.contains("hidden") && e.key === "Escape") { $("closeRules").click(); return; }
+    if ($("item").classList.contains("hidden") || typing) return;
     if (e.key === "1") answer("correct");
     else if (e.key === "2") answer("partial");
     else if (e.key === "3") answer("incorrect");
     else if (e.key === "ArrowLeft") $("back").click();
+    else if (e.key === "?") show("rules");
   });
+  window.addEventListener("pagehide", beacon);
+  document.addEventListener("visibilitychange", function () { if (document.visibilityState === "hidden") beacon(); });
+
+  // returning visitor: offer to continue
+  $("privacyDest").textContent = FORM ? "These are sent automatically to a Google Form of the researcher (every 10 answers, when you leave the page and when you finish)."
+                                      : "Nothing is sent automatically; at the end you can download your answers.";
+  (function () {
+    var k = store.get("argcheck:last"), s = k && store.get(k);
+    if (!s || !s.labels) return;
+    var n = Object.keys(s.labels).length;
+    if (n === 0) return;
+    state = s; stateKey = k;
+    $("resumeText").textContent = (n === N ? "You answered all " + N + " questions" : "Welcome back! You have answered " + n + " of " + N + " questions")
+      + (s.name ? " as “" + s.name + "”." : ".");
+    $("resumeGo").textContent = n === N ? "Review answers" : "Continue";
+    $("resume").classList.remove("hidden");
+  })();
 })();
 </script>
 </body>
