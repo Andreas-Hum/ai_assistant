@@ -60,6 +60,9 @@
   .ex { border-left: 3px solid var(--line); padding-left: 10px; margin: 10px 0; }
   .kbd { font-family: ui-monospace, monospace; border: 1px solid var(--line); border-radius: 4px; padding: 0 5px; font-size: .85em; }
   .hidden { display: none; }
+  .small { font-size: .85rem; min-height: 1.3em; }
+  .sent-ok { color: var(--ok); font-weight: 600; } .sent-bad { color: var(--bad); font-weight: 600; }
+  summary { cursor: pointer; font-weight: 600; }
   textarea { width: 100%; min-height: 120px; font: 13px ui-monospace, monospace; border-radius: 10px; padding: 8px;
              background: var(--card); color: var(--ink); border: 1px solid var(--line); }
 </style>
@@ -84,6 +87,9 @@
     </ul>
     <p class="muted">&#10216;output of &hellip;&#10217; means the value is taken from an earlier step, e.g. the user's GPS position.</p>
     <p class="muted">Do not overthink it: go with your first impression. Keys <span class="kbd">1</span> <span class="kbd">2</span> <span class="kbd">3</span> work too.</p>
+    <p class="muted hidden" id="privacy">Your answers and the name you type below are sent automatically to a Google Form
+       of the person who asked you (every 10 answers and when you finish), so there is nothing to send by hand.
+       Nothing else is collected.</p>
   </div>
 
   <div class="card">
@@ -114,9 +120,10 @@
   <div class="row">
     <span class="muted" id="count"></span><span class="spacer"></span>
     <button id="help" title="Show the rules">Rules</button>
-    <button id="finishEarly" title="Download what you have so far">Save &amp; download</button>
+    <button id="finishEarly" title="Stop here; you can continue later">Finish for now</button>
   </div>
   <div class="bar"><div id="progress"></div></div>
+  <div class="muted small" id="sync"></div>
 
   <div class="card">
     <div class="label">Situation</div>
@@ -168,24 +175,76 @@
 <section id="done" class="hidden">
   <h1>Thank you!</h1>
   <p id="doneText"></p>
-  <div class="card">
-    <p><b>Step 1:</b> download your answers and send the file to the person who asked you.</p>
+  <div class="card" id="sentCard">
+    <p id="sentText"></p>
+    <button class="primary hidden" id="retry">Try sending again</button>
+  </div>
+  <details class="card" id="manual">
+    <summary id="manualTitle">Problems? Send your answers by hand instead</summary>
+    <p>Download your answers and send the file to the person who asked you.</p>
     <button class="primary" id="download">Download my answers</button>
     <p style="margin-top:16px"><b>Or:</b> copy the text below and paste it into a message.</p>
     <button id="copy">Copy answers</button>
     <textarea id="csvBox" readonly></textarea>
-  </div>
+  </details>
   <button id="review">&larr; Go back to the questions</button>
 </section>
 
 </main>
 <script src="items.js"></script>
 <script>
+// Automatic collection: paste the Google Form's pre-filled link here (three short-answer/paragraph questions in this
+// order: name, answers, status; fill each with "x" when making the link). Empty = no sending, download only.
+var FORM_LINK = "https://docs.google.com/forms/d/e/1FAIpQLSecphf41bETNNmk4fJO5hizay4giLTNoalBIcsm6yh15fLwxg/viewform?usp=pp_url&entry.556024990=x&entry.9193450=x&entry.365110550=x";
+
 (function () {
   "use strict";
   var ITEMS = window.ITEMS || [];
   var $ = function (id) { return document.getElementById(id); };
   var state = null, pos = 0;
+
+  var FORM = (function () {
+    var ids = FORM_LINK.match(/entry\.\d+/g);
+    if (!FORM_LINK || !ids || ids.length < 3) return null;
+    return { action: FORM_LINK.split("?")[0].replace(/\/viewform$/, "/formResponse"), ids: ids.slice(0, 3) };
+  })();
+  var sending = false;
+
+  function payload(status) {
+    var n = Object.keys(state.labels).length, p = new URLSearchParams();
+    p.append(FORM.ids[0], state.name);
+    p.append(FORM.ids[1], csv());
+    p.append(FORM.ids[2], status + " " + n + "/" + ITEMS.length);
+    return p;
+  }
+  function syncText() {
+    if (!FORM || !state) return;
+    var n = Object.keys(state.labels).length, s = state.sent || 0, el = $("sync");
+    el.className = "muted small";
+    if (state.sendFailed) { el.textContent = "Could not send (offline?). Your answers are saved here and will be sent with the next answer."; el.className = "small sent-bad"; }
+    else if (s === 0) el.textContent = "Answers are sent automatically every 10 answers.";
+    else el.textContent = s + " answers sent automatically" + (n > s ? " · " + (n - s) + " waiting for the next send" : "") + ".";
+  }
+  // fetch in no-cors mode: Google returns an opaque response, so only network failures are visible
+  function send(status, done) {
+    if (!FORM || sending) return;
+    var n = Object.keys(state.labels).length;
+    sending = true;
+    fetch(FORM.action, { method: "POST", mode: "no-cors", body: payload(status) }).then(function () {
+      sending = false; state.sent = n; state.sendFailed = false; save(); syncText(); if (done) done(true);
+    }, function () {
+      sending = false; state.sendFailed = true; save(); syncText(); if (done) done(false);
+    });
+  }
+  // closing the tab: send whatever has not been sent yet
+  function beacon() {
+    if (!FORM || !state || !navigator.sendBeacon) return;
+    var n = Object.keys(state.labels).length;
+    if (n === 0 || n === state.sent) return;
+    var blob = new Blob([payload(n === ITEMS.length ? "complete" : "progress").toString()],
+                        { type: "application/x-www-form-urlencoded" });
+    if (navigator.sendBeacon(FORM.action, blob)) { state.sent = n; save(); }
+  }
 
   // storage that survives private windows failing
   var store = {
@@ -242,6 +301,7 @@
     });
     $("note").value = (cur && cur.note) || "";
     $("back").disabled = pos === 0;
+    syncText();
   }
 
   function answer(label) {
@@ -249,6 +309,8 @@
     state.labels[it.id] = { label: label, note: $("note").value.trim(), time: new Date().toISOString() };
     state.pos = pos;
     save();
+    var n = Object.keys(state.labels).length;
+    if (n < ITEMS.length && (n % 10 === 0 || state.sendFailed)) send("progress");
     var next = -1;
     for (var i = pos + 1; i < ITEMS.length; i++) { if (!state.labels[ITEMS[state.order[i]].id]) { next = i; break; } }
     if (next < 0) { for (var j = 0; j < ITEMS.length; j++) { if (!state.labels[ITEMS[state.order[j]].id]) { next = j; break; } } }
@@ -266,9 +328,28 @@
   }
 
   function finish() {
-    var n = Object.keys(state.labels).length;
-    $("doneText").textContent = "You answered " + n + " of " + ITEMS.length + " questions.";
+    var n = Object.keys(state.labels).length, all = n === ITEMS.length;
+    $("doneText").textContent = all ? "You answered all " + n + " questions."
+      : "You answered " + n + " of " + ITEMS.length + " questions. Open this page again in the same browser and type the same name to continue.";
     $("csvBox").value = csv();
+    $("retry").classList.add("hidden");
+    if (!FORM) {
+      $("sentCard").classList.add("hidden");
+      $("manualTitle").textContent = "Send your answers";
+      $("manual").open = true;
+    } else {
+      $("sentText").className = "muted"; $("sentText").textContent = "Sending your answers…";
+      var report = function (ok) {
+        $("sentText").className = ok ? "sent-ok" : "sent-bad";
+        $("sentText").textContent = ok ? (all ? "Your answers have been sent. Thank you, you can close this page."
+                                              : "Your answers so far have been sent.")
+                                       : "Sending failed (are you offline?). Try again, or send the file by hand below.";
+        $("retry").classList.toggle("hidden", ok);
+        if (!ok) $("manual").open = true;
+      };
+      sending = false;
+      send(all ? "complete" : "progress", report);
+    }
     show("done");
   }
 
@@ -292,6 +373,10 @@
   $("help").addEventListener("click", function () { show("rules"); });
   $("closeRules").addEventListener("click", function () { show("item"); render(); });
   $("finishEarly").addEventListener("click", finish);
+  $("retry").addEventListener("click", finish);
+  window.addEventListener("pagehide", beacon);
+  document.addEventListener("visibilitychange", function () { if (document.visibilityState === "hidden") beacon(); });
+  if (FORM) $("privacy").classList.remove("hidden");
   $("review").addEventListener("click", function () { show("item"); render(); });
   $("download").addEventListener("click", function () {
     var blob = new Blob([csv()], { type: "text/csv" });
