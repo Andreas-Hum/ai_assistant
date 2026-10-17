@@ -208,7 +208,6 @@
       <div><b>No sign-up</b><span>No account and no personal details. A nickname is optional.</span></div></div>
   </div>
 
-
   <div class="card">
     <h2 style="font-size:1.15rem;margin-bottom:6px">How to judge</h2>
     <p class="muted small">The tool is always the right one. You only judge <b>what the assistant filled in</b>, compared with
@@ -238,13 +237,6 @@
           <div class="p"><small>Assistant</small>Hibiscus plant</div></div>
         <div class="why"><span class="pill bad">Incorrect</span> a different plant.</div></div>
     </div>
-  </div>
-
-  <div class="card small" id="swap">
-    <p style="margin:0 0 8px">The following code gives you Karma that can be used to get free research participants at SurveySwap.io.</p>
-    <p style="margin:0 0 8px">Go to: <a href="https://surveyswap.io/sr/81GU-4DY2-AMVZ" target="_blank" rel="noopener">https://surveyswap.io/sr/81GU-4DY2-AMVZ</a></p>
-    <p style="margin:0">Or, alternatively, enter the code manually: <b style="user-select:all">81GU-4DY2-AMVZ</b></p>
-    <p style="margin:8px 0 0">P.S: This survey contains Karma to get free survey responses at SurveySwap.io</p>
   </div>
 
   <div class="resume hidden" id="resume" role="status">
@@ -375,8 +367,6 @@ var FORM_LINK = "https://docs.google.com/forms/d/e/1FAIpQLSecphf41bETNNmk4fJO5hi
   "use strict";
   var ITEMS = window.ITEMS || [];
   var N = ITEMS.length;
-  // Visitors from the SurveySwap listing (link ends in ?from=swap) get a "swap-" code, so their labels can be analysed separately.
-  var FROM_SWAP = /[?&]from=swap\b/.test(location.search);
   var $ = function (id) { return document.getElementById(id); };
   var state = null, stateKey = null, pos = 0, sending = false, toastTimer = null;
   var MILESTONES = { 10: "10 answers sent. Thank you!", 20: "20 answers sent. That already helps a lot!",
@@ -597,7 +587,7 @@ var FORM_LINK = "https://docs.google.com/forms/d/e/1FAIpQLSecphf41bETNNmk4fJO5hi
     var existing = name ? store.get(nameKey(name)) : null;
     if (existing) { state = existing; stateKey = nameKey(name); }
     else {
-      state = { name: name, pid: (FROM_SWAP ? "swap-" : "") + randomCode(), labels: {}, pos: 0, sent: 0 };
+      state = { name: name, pid: randomCode(), labels: {}, pos: 0, sent: 0 };
       state.order = priorityOrder(name + state.pid);
       stateKey = name ? nameKey(name) : "argcheck:~" + state.pid;
     }
