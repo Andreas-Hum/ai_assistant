@@ -340,6 +340,9 @@
       <button class="btn" id="review" type="button">Continue answering</button>
     </div>
   </div>
+  <div class="card hidden" id="swap" style="text-align:center">
+    <p style="margin:0">Came here from SurveySwap? <a href="https://surveyswap.io/sr/81GU-4DY2-AMVZ" target="_blank" rel="noopener">Confirm that you took part</a>.</p>
+  </div>
   <details class="card" id="manual">
     <summary id="manualTitle">Problems? Send your answers by hand instead</summary>
     <div style="margin-top:12px">
@@ -553,6 +556,7 @@ var FORM_LINK = "https://docs.google.com/forms/d/e/1FAIpQLSecphf41bETNNmk4fJO5hi
     $("review").textContent = all ? "Review my answers" : "Continue answering";
     $("csvBox").value = csv();
     $("retry").classList.add("hidden");
+    $("swap").classList.toggle("hidden", n === 0);
     if (!FORM) {
       $("sentText").textContent = "";
       $("manualTitle").textContent = "Send your answers";
