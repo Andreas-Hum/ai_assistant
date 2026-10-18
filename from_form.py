@@ -1,6 +1,6 @@
 """Split the Google Form export of the annotation site into one label file per annotator.
 
-The site sends everyone's cumulative answers every 10 answers and at the end, so a person has several responses; the
+The site sends everyone's cumulative answers after every answer and on every return visit, so a person has many responses; the
 most complete one (the latest among equally complete ones) is kept.
 Responses named "test" or "test-..." (setup checks) are skipped.
 

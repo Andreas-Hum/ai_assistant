@@ -26,6 +26,6 @@ Responses tab > three dots > **Download responses (.csv)**, put the file in this
 
 `analyse_labels.py` applies ANALYSIS_PLAN.md (screening, final labels, agreement); do not change the plan after data arrives.
 
-Every person appears several times (one response per 10 answers); `from_form.py` keeps their most complete one.
+Every person appears many times (one response per answer, plus one per return visit; the Status column ends in f, b or i = fetch, beacon or hidden-form fallback); `from_form.py` keeps their most complete one.
 Responses named `test` or `test-...` (such as the setup check `test-setup`) are skipped, so they never reach the
 agreement numbers; you can still delete them from the Responses tab.

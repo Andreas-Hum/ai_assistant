@@ -6,29 +6,31 @@
 <title>Tool Argument Check</title>
 <meta name="description" content="A short research task: judge whether an AI assistant filled in its tool calls correctly.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%232456c7'/%3E%3Cpath d='M9 16.5l4.5 4.5L23 11.5' fill='none' stroke='white' stroke-width='3.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #f6f6f3; --surface: #ffffff; --sunken: #f1f0ec; --ink: #1c1c1a; --ink-2: #44443f; --muted: #6b6b66;
-    --line: #e3e2dd; --line-strong: #cfcec8;
-    --accent: #2456c7; --accent-soft: #e9effb;
-    --ref-bg: #edf2fb; --ref-ink: #1d4b8c; --pred-bg: #f8f1e6; --pred-ink: #7a4a10;
-    --ok: #1d7a4b; --ok-bg: #e6f3ec; --part: #9a5c0b; --part-bg: #fbf0df; --bad: #b42318; --bad-bg: #fbebea;
-    --shadow: 0 1px 2px rgba(20, 20, 18, .05), 0 4px 16px rgba(20, 20, 18, .05);
+    --bg: #f2f4f7; --surface: #ffffff; --sunken: #e9edf2; --ink: #1b2433; --ink-2: #3a4556; --muted: #5d6879;
+    --line: #dde2e9; --line-strong: #c4ccd7;
+    --accent: #2f5bd3; --accent-soft: #e6ecfb; --btn: #1b2433; --btn-ink: #ffffff;
+    --ref: #0b6e69; --ref-bg: #e2f2f0; --ref-ink: #0a4f4b; --pred: #5a3db3; --pred-bg: #eeeafb; --pred-ink: #3f2a85;
+    --ok: #1a7346; --ok-bg: #e4f3ea; --part: #94570a; --part-bg: #fbefdc; --bad: #b42318; --bad-bg: #fbe9e7;
+    --shadow: 0 1px 2px rgba(27, 36, 51, .06);
   }
   @media (prefers-color-scheme: dark) {
     :root {
-      --bg: #141413; --surface: #1d1d1b; --sunken: #232321; --ink: #edece7; --ink-2: #cfcec8; --muted: #a09f98;
-      --line: #313130; --line-strong: #44443f;
-      --accent: #7ea2ff; --accent-soft: #1f2a44;
-      --ref-bg: #19263a; --ref-ink: #a9c6f3; --pred-bg: #30271a; --pred-ink: #efc88e;
-      --ok: #55c58f; --ok-bg: #16291f; --part: #e3aa4c; --part-bg: #2e2416; --bad: #f2867b; --bad-bg: #321b19;
+      --bg: #12161d; --surface: #1a2029; --sunken: #212834; --ink: #e8ecf2; --ink-2: #c7cfdb; --muted: #97a1b1;
+      --line: #2c3442; --line-strong: #404a5a;
+      --accent: #86a5ff; --accent-soft: #1d2945; --btn: #e8ecf2; --btn-ink: #12161d;
+      --ref: #5fd0c6; --ref-bg: #133230; --ref-ink: #a6e6df; --pred: #b7a3ff; --pred-bg: #272043; --pred-ink: #d6caff;
+      --ok: #5cc58f; --ok-bg: #15291e; --part: #e6ad52; --part-bg: #2e2416; --bad: #f2867b; --bad-bg: #331c1a;
       --shadow: none;
     }
   }
   * { box-sizing: border-box; }
   html { -webkit-text-size-adjust: 100%; }
   body { margin: 0; background: var(--bg); color: var(--ink);
-         font: 16px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+         font: 17px/1.55 "Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif; }
   a { color: var(--accent); }
   h1, h2, h3 { line-height: 1.25; margin: 0; }
   p { margin: 0 0 10px; }
@@ -55,15 +57,14 @@
   /* generic pieces */
   .card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 20px; box-shadow: var(--shadow); }
   .stack > * + * { margin-top: 16px; }
-  .eyebrow { font-size: .8rem; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--accent); }
-  .label { font-size: .75rem; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
+  .eyebrow { font-size: .95rem; color: var(--muted); margin: 0; }
+  .cap { font-size: .9rem; color: var(--muted); margin: 0 0 4px; }
   button { font: inherit; color: inherit; cursor: pointer; }
   .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; border-radius: 10px; padding: 11px 18px;
          border: 1px solid var(--line-strong); background: var(--surface); color: var(--ink); font-weight: 550; }
   .btn:hover { background: var(--sunken); }
-  .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
-  .btn.primary:hover { filter: brightness(1.07); }
-  @media (prefers-color-scheme: dark) { .btn.primary { color: #0f1420; } }
+  .btn.primary { background: var(--btn); border-color: var(--btn); color: var(--btn-ink); font-weight: 700; }
+  .btn.primary:hover { filter: brightness(1.15); }
   .btn.quiet { border-color: transparent; background: transparent; color: var(--ink-2); padding: 8px 10px; }
   .btn.quiet:hover { background: var(--sunken); }
   .btn:disabled { opacity: .45; cursor: default; }
@@ -78,30 +79,25 @@
   details[open] > summary::before { transform: rotate(90deg); }
 
   /* welcome */
-  .hero h1 { font-size: clamp(1.6rem, 4.2vw, 2.15rem); letter-spacing: -.02em; margin: 6px 0 12px; }
-  .lead { font-size: 1.08rem; color: var(--ink-2); max-width: 62ch; }
-  .facts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
-  @media (max-width: 640px) { .facts { grid-template-columns: 1fr; } }
-  .fact { display: flex; gap: 12px; align-items: flex-start; padding: 14px; border-radius: 12px; background: var(--surface); border: 1px solid var(--line); }
-  .fact .ico { flex: none; width: 34px; height: 34px; border-radius: 9px; background: var(--accent-soft); color: var(--accent);
-               display: grid; place-items: center; }
-  .fact b { display: block; font-size: .95rem; }
-  .fact span { font-size: .875rem; color: var(--muted); }
+  .hero h1 { font-size: clamp(1.75rem, 5vw, 2.4rem); letter-spacing: -.015em; margin: 6px 0 12px; }
+  .lead { font-size: 1.1rem; color: var(--ink-2); max-width: 60ch; }
+  h2.sec { font-size: 1.2rem; margin-bottom: 10px; }
+  .steps { margin: 0; padding: 0; list-style: none; counter-reset: s; }
+  .steps li { counter-increment: s; display: grid; grid-template-columns: 2.1rem 1fr; gap: 10px; padding: 8px 0; }
+  .steps li::before { content: counter(s); width: 1.8rem; height: 1.8rem; border-radius: 50%; display: grid; place-items: center;
+                      background: var(--ink); color: var(--bg); font-weight: 700; font-size: .95rem; }
+  .tips { margin: 0; padding-left: 1.2em; } .tips li { margin: 4px 0; }
   .rules { margin: 0; padding: 0; list-style: none; }
-  .rules li { display: grid; grid-template-columns: 7.2em 1fr; gap: 10px; padding: 9px 0; border-top: 1px solid var(--line); }
+  .rules li { display: grid; grid-template-columns: 8.6em 1fr; gap: 10px; padding: 9px 0; border-top: 1px solid var(--line); }
   .rules li:first-child { border-top: 0; }
-  .pill { display: inline-block; font-size: .8rem; font-weight: 700; padding: 2px 10px; border-radius: 999px; text-align: center; height: fit-content; }
+  @media (max-width: 420px) { .rules li { grid-template-columns: 1fr; gap: 2px; } }
+  .pill { display: inline-block; font-size: .9rem; font-weight: 700; padding: 2px 10px; border-radius: 999px; height: fit-content; width: fit-content; }
   .pill.ok { background: var(--ok-bg); color: var(--ok); } .pill.part { background: var(--part-bg); color: var(--part); }
   .pill.bad { background: var(--bad-bg); color: var(--bad); }
-  .examples { display: grid; gap: 12px; }
-  .ex { border: 1px solid var(--line); border-radius: 12px; padding: 14px; background: var(--sunken); }
-  .ex .sit { font-weight: 600; margin-bottom: 8px; }
-  .ex .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; }
-  @media (max-width: 520px) { .ex .pair { grid-template-columns: 1fr; } }
-  .ex .pair div { border-radius: 8px; padding: 8px 10px; font-size: .92rem; }
-  .ex .pair .r { background: var(--ref-bg); color: var(--ref-ink); } .ex .pair .p { background: var(--pred-bg); color: var(--pred-ink); }
-  .ex .pair small { display: block; font-size: .7rem; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; opacity: .85; }
-  .ex .why { font-size: .92rem; color: var(--ink-2); }
+  .examples { display: grid; gap: 18px; }
+  .ex .sit { margin: 0 0 8px; }
+  .ex + .ex { border-top: 1px solid var(--line); padding-top: 18px; }
+  .ex .why { margin: 8px 0 0; color: var(--ink-2); }
   .start-row { display: flex; gap: 10px; align-items: stretch; }
   .start-row input { flex: 1; }
   @media (max-width: 520px) { .start-row { flex-direction: column; } }
@@ -114,29 +110,31 @@
   .chip { font-size: .8rem; padding: 3px 10px; border-radius: 999px; background: var(--sunken); color: var(--ink-2); border: 1px solid var(--line); }
   .chip.ok { color: var(--ok); background: var(--ok-bg); border-color: transparent; }
   .chip.bad { color: var(--bad); background: var(--bad-bg); border-color: transparent; }
-  .situation { font-size: 1.06rem; }
-  .ctx { display: grid; grid-template-columns: auto 1fr; gap: 6px 14px; margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--line); }
-  .ctx dt { font-size: .75rem; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); padding-top: 2px; }
-  .ctx dd { margin: 0; }
-  .tool { font-weight: 650; }
+  .situation { font-size: 1.15rem; font-weight: 400; }
   #situation:focus { outline: none; }
-  .compare { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px; }
-  @media (max-width: 600px) { .compare { grid-template-columns: 1fr; } }
-  .ans { border-radius: 12px; padding: 14px 16px; }
-  .ans.ref { background: var(--ref-bg); color: var(--ref-ink); } .ans.pred { background: var(--pred-bg); color: var(--pred-ink); }
-  .ans .head { font-size: .75rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
-  .ans .sub { font-size: .8rem; opacity: .85; margin-bottom: 8px; }
-  .ans dl { margin: 0; }
-  .ans dt { font-size: .8rem; opacity: .85; }
-  .ans dd { margin: 0 0 8px; font-weight: 600; color: var(--ink); word-break: break-word; }
-  .ans dd:last-child { margin-bottom: 0; }
-  .ask { margin: 22px 0 10px; font-weight: 650; }
+  .who { margin: 8px 0 0; color: var(--ink-2); }
+  .job { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--line); }
+  .tool { font-weight: 700; font-size: 1.05rem; margin: 0; }
+  .job .small { margin: 2px 0 0; }
+  /* the comparison: one row per field, person left, AI right */
+  .cmp { display: grid; grid-template-columns: 1fr 1fr; gap: 0 10px; margin-top: 16px; }
+  .cmp-h { font-weight: 700; padding: 0 2px 6px; display: flex; align-items: center; gap: 7px; }
+  .cmp-h::before { content: ""; width: .7rem; height: .7rem; border-radius: 50%; background: currentColor; flex: none; }
+  .cmp-h.p { color: var(--ref); } .cmp-h.a { color: var(--pred); }
+  .cmp-f { grid-column: 1 / -1; font-size: .9rem; color: var(--muted); margin: 8px 2px 4px; }
+  .cmp-f:first-of-type { margin-top: 0; }
+  .cell { border-radius: 12px; padding: 12px 14px; font-size: 1.08rem; font-weight: 700; line-height: 1.35; word-break: break-word; }
+  .cell.p { background: var(--ref-bg); color: var(--ref-ink); border-left: 4px solid var(--ref); }
+  .cell.a { background: var(--pred-bg); color: var(--pred-ink); border-left: 4px solid var(--pred); }
+  .cell.none { font-weight: 400; font-style: italic; opacity: .8; }
+  .cmp-note { margin: 10px 2px 0; }
+  .ask { margin: 22px 0 10px; font-weight: 700; font-size: 1.12rem; }
   .choices { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
   @media (max-width: 600px) { .choices { grid-template-columns: 1fr; } }
   .choice { text-align: left; border-radius: 12px; padding: 13px 14px; background: var(--surface); border: 1.5px solid var(--line-strong);
-            display: grid; grid-template-columns: 1fr auto; gap: 2px 8px; transition: background .12s, border-color .12s; }
-  .choice b { font-size: 1.02rem; } .choice .kbd { align-self: start; }
-  .choice span.d { grid-column: 1 / -1; font-size: .84rem; color: var(--muted); line-height: 1.4; }
+            display: grid; grid-template-columns: 1fr auto; align-content: start; gap: 2px 8px; transition: background .12s, border-color .12s; }
+  .choice b { font-size: 1.1rem; } .choice .kbd { align-self: start; }
+  .choice span.d { grid-column: 1 / -1; font-size: .92rem; color: var(--ink-2); line-height: 1.4; }
   .choice.ok b { color: var(--ok); } .choice.part b { color: var(--part); } .choice.bad b { color: var(--bad); }
   .choice.ok:hover, .choice.ok.chosen { border-color: var(--ok); background: var(--ok-bg); }
   .choice.part:hover, .choice.part.chosen { border-color: var(--part); background: var(--part-bg); }
@@ -173,14 +171,14 @@
     <div class="brand">
       <svg width="26" height="26" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" fill="var(--accent)"/>
         <path d="M9 16.5l4.5 4.5L23 11.5" fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      <span>Tool Argument Check</span>
+      <span>Check the AI</span>
     </div>
     <div class="spacer"></div>
     <div class="meter hidden" id="meter" aria-hidden="true">
       <div class="track"><div class="fill" id="progress"></div></div>
       <span class="num" id="meterNum"></span>
     </div>
-    <button class="btn quiet hidden" id="help" type="button" aria-label="How to judge">How to judge</button>
+    <button class="btn quiet hidden" id="help" type="button">Help</button>
   </div>
 </header>
 
@@ -189,54 +187,49 @@
 <!-- Welcome -->
 <section id="start" class="stack">
   <div class="hero">
-    <div class="eyebrow">University research study</div>
-    <h1>Help check what an AI assistant fills in</h1>
-    <p class="lead">An AI assistant fills in things like a web search or a calendar entry. You see the <b>right answer</b>
-      next to the <b>AI's answer</b> and press one button: <b>Correct</b>, <b>Partial</b> or <b>Incorrect</b>.
-      No background knowledge needed. Takes 5&ndash;10 minutes, works on your phone.</p>
-  </div>
-
-  <div class="facts">
-    <div class="fact"><div class="ico" aria-hidden="true">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div>
-      <div><b>Answer as many as you like</b><span>About 10 seconds per question. 20 questions take about 3 minutes and already help a lot. Stop any time with &ldquo;I'm done for now&rdquo;.</span></div></div>
-    <div class="fact"><div class="ico" aria-hidden="true">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l4 4L19 7"/></svg></div>
-      <div><b>Sent automatically</b><span>Your answers are sent as you go. There is nothing to submit at the end.</span></div></div>
-    <div class="fact"><div class="ico" aria-hidden="true">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="10" width="14" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></div>
-      <div><b>No sign-up</b><span>No account and no personal details. A nickname is optional.</span></div></div>
+    <p class="eyebrow">A university research project, 5&ndash;10 minutes</p>
+    <h1>Is the AI's answer good enough?</h1>
+    <p class="lead">We are testing an AI helper built into smart glasses. It sees what you see and does small jobs for you,
+      like searching the web or adding something to your calendar. You check whether it typed in the right thing.
+      No knowledge about AI is needed.</p>
   </div>
 
   <div class="card">
-    <h2 style="font-size:1.15rem;margin-bottom:6px">How to judge</h2>
-    <p class="muted small">The tool is always the right one. You only judge <b>what the assistant filled in</b>, compared with
-      the reference answer and given the situation.</p>
-    <ul class="rules">
-      <li><span class="pill ok">Correct</span><span>would help the user just as well. Different words for the same thing count as correct.</span></li>
-      <li><span class="pill part">Partial</span><span>same topic, but asks for something different or narrower, or one of several fields is wrong.</span></li>
-      <li><span class="pill bad">Incorrect</span><span>a different topic, or would not help the user.</span></li>
-    </ul>
-    <p class="muted small" style="margin:10px 0 0">&#10216;output of &hellip;&#10217; means the value is taken from an earlier step,
-      e.g. the user's GPS position. Do not overthink it: go with your first impression.</p>
+    <h2 class="sec">How it works</h2>
+    <ol class="steps">
+      <li><span><b>Read what is happening.</b> For example: someone is in a bookshop, looking at a new novel.</span></li>
+      <li><span><b>Compare two answers:</b> what a person wrote, and what the AI wrote.</span></li>
+      <li><span><b>Press one button.</b> Is the AI's answer just as useful? <b>Yes</b>, <b>Partly</b> or <b>No</b>.</span></li>
+    </ol>
   </div>
 
   <div class="card">
-    <h2 style="font-size:1.15rem;margin-bottom:12px">Three examples</h2>
+    <h2 class="sec">Three examples</h2>
     <div class="examples">
-      <div class="ex"><div class="sit">Museum exhibit &ldquo;Ancient Egypt Artifacts&rdquo; &middot; web search</div>
-        <div class="pair"><div class="r"><small>Reference</small>Ancient Egyptian artifacts and cultural significance</div>
-          <div class="p"><small>Assistant</small>Ancient Egypt Artifacts</div></div>
-        <div class="why"><span class="pill ok">Correct</span> same search, different words.</div></div>
-      <div class="ex"><div class="sit">Rose garden, gardening fan &middot; web search</div>
-        <div class="pair"><div class="r"><small>Reference</small>rose care and popular varieties</div>
-          <div class="p"><small>Assistant</small>rose blooming times and details</div></div>
-        <div class="why"><span class="pill part">Partial</span> same topic, different information.</div></div>
-      <div class="ex"><div class="sit">Botanical garden, no specific plant named &middot; Wikipedia search</div>
-        <div class="pair"><div class="r"><small>Reference</small>Ghost Orchid</div>
-          <div class="p"><small>Assistant</small>Hibiscus plant</div></div>
-        <div class="why"><span class="pill bad">Incorrect</span> a different plant.</div></div>
+      <div class="ex"><p class="sit">Someone is at a museum exhibit called &ldquo;Ancient Egypt Artifacts&rdquo;. <span class="muted">The AI decides to <b>search Google</b>.</span></p>
+        <div class="cmp"><div class="cmp-h p">A person wrote</div><div class="cmp-h a">The AI wrote</div>
+          <div class="cmp-f">Searches for</div><div class="cell p">Ancient Egyptian artifacts and cultural significance</div><div class="cell a">Ancient Egypt Artifacts</div></div>
+        <p class="why"><span class="pill ok">Yes, just as useful</span> The same search in other words.</p></div>
+      <div class="ex"><p class="sit">A gardening fan is walking through a rose garden. <span class="muted">The AI decides to <b>search a tips app</b>.</span></p>
+        <div class="cmp"><div class="cmp-h p">A person wrote</div><div class="cmp-h a">The AI wrote</div>
+          <div class="cmp-f">Searches for</div><div class="cell p">rose care and popular varieties</div><div class="cell a">rose blooming times and details</div></div>
+        <p class="why"><span class="pill part">Partly</span> Still about roses, but it asks for different information.</p></div>
+      <div class="ex"><p class="sit">Someone is in a botanical garden. No plant is named. <span class="muted">The AI decides to <b>search Wikipedia</b>.</span></p>
+        <div class="cmp"><div class="cmp-h p">A person wrote</div><div class="cmp-h a">The AI wrote</div>
+          <div class="cmp-f">Searches for</div><div class="cell p">Ghost Orchid</div><div class="cell a">Hibiscus plant</div></div>
+        <p class="why"><span class="pill bad">No</span> A different plant.</p></div>
     </div>
+  </div>
+
+  <div class="card">
+    <h2 class="sec">Good to know</h2>
+    <ul class="tips">
+      <li>There is no right or wrong for you. We want your first impression.</li>
+      <li>The person's answer is just one good answer. Other words for the same thing count as <b>Yes</b>.</li>
+      <li>Some questions are hard on purpose. Pick what feels closest and move on.</li>
+      <li>About 10 seconds per question. Answer as many as you like: 20 already help a lot.</li>
+      <li>Your answers are sent automatically. No sign-up and no personal details.</li>
+    </ul>
   </div>
 
   <div class="resume hidden" id="resume" role="status">
@@ -245,8 +238,13 @@
     <button class="btn quiet" id="resumeNew" type="button">Start as someone else</button>
   </div>
 
+  <div class="resume hidden" id="inapp" role="note">
+    <p style="margin:0">You opened this inside an app (for example Messenger, Instagram or Snapchat). It works here, but your
+      progress can be lost when the app closes. If you can, open the page in Safari or Chrome instead (tap &hellip; or &#8942;, then &ldquo;Open in browser&rdquo;).</p>
+  </div>
+
   <div class="card" id="startCard">
-    <label for="name" style="display:block;font-weight:650;margin-bottom:4px">Nickname <span class="muted" style="font-weight:400">(optional)</span></label>
+    <label for="name" style="display:block;font-weight:700;margin-bottom:4px">Nickname <span class="muted" style="font-weight:400">(optional)</span></label>
     <p class="muted small">Lets you continue later on this device. Please do not use your full name.</p>
     <div class="start-row">
       <input type="text" id="name" maxlength="30" autocomplete="off" spellcheck="false" placeholder="e.g. sunflower42">
@@ -276,27 +274,27 @@
   </div>
 
   <div class="card">
-    <div class="label">Situation</div>
-    <h2 class="situation" id="situation" tabindex="-1" style="font-weight:500"></h2>
-    <dl class="ctx">
-      <dt id="personaLabel">The user</dt><dd id="persona"></dd>
-      <dt>Tool</dt><dd><span class="tool" id="tool"></span> <span class="muted" id="desc"></span></dd>
-    </dl>
+    <p class="cap">What is happening</p>
+    <h2 class="situation" id="situation" tabindex="-1"></h2>
+    <p class="who" id="personaLabel"><span class="muted">About the person:</span> <span id="persona"></span></p>
+    <div class="job">
+      <p class="cap">So the AI decides to</p>
+      <p class="tool" id="tool"></p>
+      <p class="muted small" id="desc"></p>
+    </div>
   </div>
 
-  <div class="compare">
-    <div class="ans ref"><div class="head">Reference answer</div><div class="sub">the expected answer</div><dl id="ref"></dl></div>
-    <div class="ans pred"><div class="head">Assistant's answer</div><div class="sub">what it actually filled in</div><dl id="pred"></dl></div>
-  </div>
+  <div class="cmp" id="cmp"></div>
+  <p class="muted small cmp-note">The person's answer is one good answer. The AI may use other words.</p>
 
-  <p class="ask" id="askLabel">Would the assistant's answer help the user as well as the reference?</p>
+  <p class="ask" id="askLabel">Is the AI's answer just as useful for this person?</p>
   <div class="choices" role="group" aria-labelledby="askLabel">
-    <button class="choice ok" data-label="correct" type="button"><b>Correct</b><span class="kbd">1</span>
-      <span class="d">would help just as well; different words are fine</span></button>
-    <button class="choice part" data-label="partial" type="button"><b>Partial</b><span class="kbd">2</span>
-      <span class="d">same topic, but different or narrower, or a field is wrong</span></button>
-    <button class="choice bad" data-label="incorrect" type="button"><b>Incorrect</b><span class="kbd">3</span>
-      <span class="d">a different topic, or would not help</span></button>
+    <button class="choice ok" data-label="correct" type="button"><b>Yes, just as useful</b><span class="kbd">1</span>
+      <span class="d">Other words for the same thing are fine</span></button>
+    <button class="choice part" data-label="partial" type="button"><b>Partly</b><span class="kbd">2</span>
+      <span class="d">Same subject, but asks for something a bit different, or one part is wrong</span></button>
+    <button class="choice bad" data-label="incorrect" type="button"><b>No</b><span class="kbd">3</span>
+      <span class="d">Something else, or would not help</span></button>
   </div>
 
   <details class="note" id="noteBox">
@@ -315,14 +313,16 @@
 <!-- How to judge (from a question) -->
 <section id="rules" class="hidden">
   <div class="card">
-    <h2 style="font-size:1.15rem;margin-bottom:6px">How to judge</h2>
+    <h2 class="sec">How to answer</h2>
+    <p>Is the AI's answer just as useful for the person as the answer a person wrote?</p>
     <ul class="rules">
-      <li><span class="pill ok">Correct</span><span>would help the user just as well (different words for the same thing are fine).</span></li>
-      <li><span class="pill part">Partial</span><span>same topic but different or narrower information, or one of several fields wrong.</span></li>
-      <li><span class="pill bad">Incorrect</span><span>a different topic, or would not help the user.</span></li>
+      <li><span class="pill ok">Yes, just as useful</span><span>It would help just as well. Other words for the same thing are fine.</span></li>
+      <li><span class="pill part">Partly</span><span>Same subject, but it asks for something a bit different or narrower, or one part is wrong.</span></li>
+      <li><span class="pill bad">No</span><span>Something else, or it would not help.</span></li>
     </ul>
-    <p class="muted small" style="margin:10px 0 16px">Only judge what was filled in, not whether the tool itself was a good idea.
-      &#10216;output of &hellip;&#10217; means the value is taken from an earlier step, e.g. the user's GPS position.</p>
+    <p class="muted" style="margin:12px 0 16px">Only judge what the AI wrote, not whether its job was a good idea.
+      &ldquo;Found automatically&rdquo; means the glasses fill it in themselves, for example your current address from GPS.
+      There is no right or wrong for you: go with your first impression.</p>
     <button class="btn primary" id="closeRules" type="button">Back to the question</button>
   </div>
 </section>
@@ -367,8 +367,11 @@ var FORM_LINK = "https://docs.google.com/forms/d/e/1FAIpQLSecphf41bETNNmk4fJO5hi
   "use strict";
   var ITEMS = window.ITEMS || [];
   var N = ITEMS.length;
+  // Wording version, stored with every answer: 1 = "Correct / Partial / Incorrect" (until 18 Oct 2026),
+  // 2 = plain wording "Yes, just as useful / Partly / No". Answers without a version were given under version 1.
+  var WORDING = 2;
   var $ = function (id) { return document.getElementById(id); };
-  var state = null, stateKey = null, pos = 0, sending = false, toastTimer = null;
+  var state = null, stateKey = null, pos = 0, toastTimer = null;
   var MILESTONES = { 10: "10 answers sent. Thank you!", 20: "20 answers sent. That already helps a lot!",
                      50: "50 answers sent. That covers the questions we need most. Anything more is a bonus!", 100: "100 answers sent. Two thirds done!" };
 
@@ -440,55 +443,135 @@ var FORM_LINK = "https://docs.google.com/forms/d/e/1FAIpQLSecphf41bETNNmk4fJO5hi
     clearTimeout(toastTimer); toastTimer = setTimeout(function () { t.classList.remove("show"); }, 4200);
   }
 
-  // ---- sending (Google Form, no-cors: only network failures are visible) ----
-  function payload(status) {
+  // ---- sending (Google Form) ----
+  // Every answer sends ALL answers so far, so any one response that arrives is complete up to that point (from_form.py
+  // keeps each person's most complete one). Google Forms only accepts "no-cors" requests, so delivery can never be
+  // confirmed: a failed request falls back to sendBeacon and then to a hidden form post, and unsent answers are sent
+  // again every 20 s, when the connection returns, when the page is hidden, and every time the visitor comes back.
+  var inflight = false, again = false, sendTimer = null, waiters = [];
+  function status() { return answered() === N ? "complete" : "progress"; }
+  function payload(via) {
     var p = new URLSearchParams();
     p.append(FORM.ids[0], annotator());
     p.append(FORM.ids[1], csv());
-    p.append(FORM.ids[2], status + " " + answered() + "/" + N);
+    p.append(FORM.ids[2], status() + " " + answered() + "/" + N + " " + via);
     return p;
+  }
+  function viaBeacon() {
+    if (!navigator.sendBeacon) return false;
+    try { return navigator.sendBeacon(FORM.action, new Blob([payload("b").toString()], { type: "application/x-www-form-urlencoded" })); }
+    catch (e) { return false; }
+  }
+  function viaFrame() {  // classic form post into a hidden iframe: works where fetch and beacons are blocked
+    try {
+      var id = "sink" + Date.now(), fr = document.createElement("iframe"), f = document.createElement("form");
+      fr.name = id; fr.style.display = "none"; fr.setAttribute("aria-hidden", "true");
+      f.method = "POST"; f.action = FORM.action; f.target = id; f.style.display = "none";
+      payload("i").forEach(function (v, k) { var i = document.createElement("input"); i.type = "hidden"; i.name = k; i.value = v; f.appendChild(i); });
+      document.body.appendChild(fr); document.body.appendChild(f); f.submit();
+      setTimeout(function () { fr.remove(); f.remove(); }, 60000);
+      return true;
+    } catch (e) { return false; }
   }
   function syncText() {
     var el = $("sync");
     if (!FORM || !state) { el.classList.add("hidden"); return; }
     var n = answered(), s = state.sent || 0;
     el.className = "chip";
-    if (state.sendFailed) { el.className = "chip bad"; el.textContent = "Not sent yet (offline?) · will retry"; }
-    else if (s === 0) el.textContent = "Sent automatically every 10 answers";
-    else { el.className = "chip ok"; el.textContent = "✓ " + s + " sent" + (n > s ? " · " + (n - s) + " waiting" : ""); }
+    if (state.sendFailed) { el.className = "chip bad"; el.textContent = "Not sent yet (offline?) · retrying"; }
+    else if (n === 0) el.textContent = "Answers are sent as you go";
+    else if (s >= n) { el.className = "chip ok"; el.textContent = "✓ " + s + " sent"; }
+    else el.textContent = s ? "✓ " + s + " sent · sending…" : "Sending…";
   }
-  function send(status, done) {
-    if (!FORM || sending) return;
-    var n = answered();
-    sending = true;
-    fetch(FORM.action, { method: "POST", mode: "no-cors", body: payload(status) }).then(function () {
-      sending = false; state.sent = n; state.sendFailed = false; save(); syncText(); if (done) done(true);
-    }, function () {
-      sending = false; state.sendFailed = true; save(); syncText(); if (done) done(false);
-    });
+  function flush(ok) { var w = waiters; waiters = []; w.forEach(function (f) { f(ok); }); }
+  function send(done) {
+    if (done) waiters.push(done);
+    if (!FORM || !state || answered() === 0) { flush(true); return; }
+    if (inflight) { again = true; return; }
+    inflight = true; again = false;
+    var st = state, n = answered(), body = payload("f");  // st: "start as someone else" may replace state meanwhile
+    var ctrl = window.AbortController ? new AbortController() : null;
+    var timer = setTimeout(function () { if (ctrl) ctrl.abort(); else end(false); }, 15000);
+    var finished = false;
+    function end(ok) {
+      if (finished) return; finished = true;
+      clearTimeout(timer);
+      if (!ok && navigator.onLine !== false) ok = viaBeacon() || viaFrame();  // fetch blocked or hanging: other routes
+      inflight = false;
+      if (ok) { st.sent = Math.max(st.sent || 0, n); st.sendFailed = false; } else st.sendFailed = true;
+      if (st === state) { save(); syncText(); }
+      if (ok && (again || (st === state && answered() > st.sent))) send(); else flush(ok);
+    }
+    try {
+      fetch(FORM.action, { method: "POST", mode: "no-cors", body: body, keepalive: body.toString().length < 60000,
+                           signal: ctrl ? ctrl.signal : undefined })
+        .then(function () { end(true); }, function () { end(false); });
+    } catch (e) { end(false); }
   }
-  function beacon() {  // closing or hiding the tab: send whatever has not been sent yet
-    if (!FORM || !state || !navigator.sendBeacon) return;
-    var n = answered();
-    if (n === 0 || n === state.sent) return;
-    var blob = new Blob([payload(n === N ? "complete" : "progress").toString()], { type: "application/x-www-form-urlencoded" });
-    if (navigator.sendBeacon(FORM.action, blob)) { state.sent = n; save(); }
+  function scheduleSend() { clearTimeout(sendTimer); sendTimer = setTimeout(function () { send(); }, 1200); }
+  function unsent() { return FORM && state && answered() > (state.sent || 0); }
+  function onHide() {  // the tab is hidden or closed: send now, by a route that survives closing
+    if (!unsent()) return;
+    clearTimeout(sendTimer);
+    if (viaBeacon()) { state.sent = answered(); save(); }
+    else send();
   }
 
   // ---- rendering ----
-  function pretty(tool) { var s = String(tool).replace(/_/g, " "); return s.charAt(0).toUpperCase() + s.slice(1); }
-  function fill(dl, obj) {
-    dl.innerHTML = "";
-    var keys = Object.keys(obj || {});
-    if (!keys.length) { var e = document.createElement("dd"); e.textContent = "(nothing filled in)"; dl.appendChild(e); return; }
+  // Plain-language names for the tools and fields (the data itself is unchanged).
+  var TOOLS = {
+    google_search: ["search Google", "Searches the web."],
+    wikipedia_search: ["search Wikipedia", "Looks up facts about people, places, history and more."],
+    search_rednote: ["search a tips app (Rednote)", "An app where people share tips about travel, fitness, cooking, shopping and more."],
+    get_online_product_price: ["check the price online", "Looks up what a product costs on sites like Amazon or eBay."],
+    get_medical_knowledge: ["look up health information", "Searches a medical database."],
+    add_to_agenda: ["add it to the calendar", "Puts a reminder or event in the person's calendar."],
+    add_meeting: ["book a meeting", "Books a meeting and saves what it is about, when and where."],
+    get_city_weather: ["check the weather", "Looks up the weather forecast for a city."],
+    check_bus_schedule: ["check the bus times", "Looks up when buses leave from a bus stop."],
+    google_map: ["find the way (Google Maps)", "Finds the route from where the person is to a place."],
+    book_uber: ["book an Uber", "Orders a car from where the person is to a place."],
+    set_timer: ["set a timer", "Starts a countdown."],
+    vllm: ["look closely at the camera picture", "Looks at what the glasses' camera sees and answers a question about it."]
+  };
+  var FIELDS = {
+    query: "Searches for", product_name: "Product", event: "What", time: "When", city: "City", bus_stop: "Bus stop",
+    route: "Bus line", current_location: "From", destination: "To", duration: "How long", meeting_topic: "About",
+    start_time: "When", meeting_location: "Where", prompt: "Question about the picture", image_path: "Picture"
+  };
+  var FIELDS_BY_TOOL = { get_medical_knowledge: { query: "Question" } };
+  function toolName(t) { return (TOOLS[t] || [String(t).replace(/_/g, " ")])[0]; }
+  function fieldName(tool, k) { return (FIELDS_BY_TOOL[tool] || {})[k] || FIELDS[k] || k.replace(/_/g, " "); }
+  function plain(v) {
+    if (v === undefined) return null;
+    var txt = (v === "" || v === null) ? "" : (typeof v === "object" ? JSON.stringify(v) : String(v));
+    if (txt === "") return "";
+    if (txt === "current_view") return "what the camera sees now";
+    // $RESULT(tool.field) = a value the glasses fill in themselves from an earlier step
+    return txt.replace(/\$RESULT\((\w+)\.(\w+)\)/g, function (_, t, f) {
+      return f === "address" ? "the current address (found automatically)" : f === "city" ? "the current city (found automatically)"
+        : f.replace(/_/g, " ") + " (found automatically)"; });
+  }
+  function cell(cls, v) {
+    var d = document.createElement("div"); d.className = "cell " + cls;
+    if (v === null) { d.classList.add("none"); d.textContent = "(not filled in)"; }
+    else if (v === "") { d.classList.add("none"); d.textContent = "(left empty)"; }
+    else d.textContent = v;
+    return d;
+  }
+  function compare(it) {
+    var box = $("cmp"); box.innerHTML = "";
+    var h1 = document.createElement("div"); h1.className = "cmp-h p"; h1.textContent = "A person wrote";
+    var h2 = document.createElement("div"); h2.className = "cmp-h a"; h2.textContent = "The AI wrote";
+    box.appendChild(h1); box.appendChild(h2);
+    var ref = it.reference || {}, pred = it.predicted || {};
+    var keys = Object.keys(ref); Object.keys(pred).forEach(function (k) { if (keys.indexOf(k) < 0) keys.push(k); });
+    if (!keys.length) { box.appendChild(cell("p", null)); box.appendChild(cell("a", null)); return; }
     keys.forEach(function (k) {
-      var dt = document.createElement("dt"); dt.textContent = k.replace(/_/g, " ");
-      var dd = document.createElement("dd"); var v = obj[k];
-      var txt = (v === "" || v === null) ? "(empty)" : (typeof v === "object" ? JSON.stringify(v) : String(v));
-      // $RESULT(tool.field) = value taken from an earlier tool call
-      dd.textContent = txt.replace(/\$RESULT\((\w+)\.(\w+)\)/g, function (_, t, f) {
-        return "⟨output of " + t.replace(/_/g, " ") + ": " + f.replace(/_/g, " ") + "⟩"; });
-      dl.appendChild(dt); dl.appendChild(dd);
+      var f = document.createElement("div"); f.className = "cmp-f"; f.textContent = fieldName(it.tool, k);
+      box.appendChild(f);
+      box.appendChild(cell("p", k in ref ? plain(ref[k]) : null));
+      box.appendChild(cell("a", k in pred ? plain(pred[k]) : null));
     });
   }
   function meter() {
@@ -502,11 +585,11 @@ var FORM_LINK = "https://docs.google.com/forms/d/e/1FAIpQLSecphf41bETNNmk4fJO5hi
     meter();
     $("situation").textContent = it.situation;
     var hasP = !!it.persona;
-    $("personaLabel").classList.toggle("hidden", !hasP); $("persona").classList.toggle("hidden", !hasP);
+    $("personaLabel").classList.toggle("hidden", !hasP);
     $("persona").textContent = it.persona || "";
-    $("tool").textContent = pretty(it.tool);
-    $("desc").textContent = it.description ? "— " + it.description : "";
-    fill($("ref"), it.reference); fill($("pred"), it.predicted);
+    $("tool").textContent = toolName(it.tool);
+    $("desc").textContent = (TOOLS[it.tool] || [0, it.description || ""])[1];
+    compare(it);
     var cur = state.labels[it.id];
     document.querySelectorAll(".choice").forEach(function (b) {
       var on = !!(cur && cur.label === b.dataset.label);
@@ -521,11 +604,11 @@ var FORM_LINK = "https://docs.google.com/forms/d/e/1FAIpQLSecphf41bETNNmk4fJO5hi
   function answer(label) {
     var it = ITEMS[state.order[pos]];
     var first = !state.labels[it.id];
-    state.labels[it.id] = { label: label, note: $("note").value.trim(), time: new Date().toISOString() };
+    state.labels[it.id] = { label: label, note: $("note").value.trim(), time: new Date().toISOString(), v: WORDING };
     state.pos = pos;
     save();
     var n = answered();
-    if (n < N && (n % 10 === 0 || state.sendFailed)) send("progress");
+    if (n < N) scheduleSend();
     if (first && MILESTONES[n] && FORM) toast(MILESTONES[n] + " Stop any time with “I'm done for now”.");
     var next = -1;
     for (var i = pos + 1; i < N; i++) { if (!state.labels[ITEMS[state.order[i]].id]) { next = i; break; } }
@@ -535,10 +618,10 @@ var FORM_LINK = "https://docs.google.com/forms/d/e/1FAIpQLSecphf41bETNNmk4fJO5hi
 
   function csv() {
     var esc = function (s) { s = String(s || ""); return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
-    var lines = ["id,label,notes,annotator,time"];
+    var lines = ["id,label,notes,annotator,time,wording"];
     ITEMS.forEach(function (it) {
       var l = state.labels[it.id];
-      if (l) lines.push([it.id, l.label, esc(l.note), esc(annotator()), l.time].join(","));
+      if (l) lines.push([it.id, l.label, esc(l.note), esc(annotator()), l.time, l.v || 1].join(","));
     });
     return lines.join("\n") + "\n";
   }
@@ -568,8 +651,8 @@ var FORM_LINK = "https://docs.google.com/forms/d/e/1FAIpQLSecphf41bETNNmk4fJO5hi
         $("retry").classList.toggle("hidden", ok);
         if (!ok) $("manual").open = true;
       };
-      sending = false;
-      send(all ? "complete" : "progress", report);
+      clearTimeout(sendTimer);
+      send(report);
     }
     show("done");
   }
@@ -634,11 +717,16 @@ var FORM_LINK = "https://docs.google.com/forms/d/e/1FAIpQLSecphf41bETNNmk4fJO5hi
     else if (e.key === "ArrowLeft") $("back").click();
     else if (e.key === "?") show("rules");
   });
-  window.addEventListener("pagehide", beacon);
-  document.addEventListener("visibilitychange", function () { if (document.visibilityState === "hidden") beacon(); });
+  window.addEventListener("pagehide", onHide);
+  document.addEventListener("visibilitychange", function () { if (document.visibilityState === "hidden") onHide(); });
+  window.addEventListener("online", function () { if (unsent()) send(); });
+  setInterval(function () { if (unsent() && !inflight) send(); }, 20000);
+
+  if (/FBAN|FBAV|FB_IAB|Instagram|Snapchat|musical_ly|TikTok|BytedanceWebview|LinkedInApp|\bLine\/|; wv\)/.test(navigator.userAgent || ""))
+    $("inapp").classList.remove("hidden");
 
   // returning visitor: offer to continue
-  $("privacyDest").textContent = FORM ? "These are sent automatically to a Google Form of the researcher (every 10 answers, when you leave the page and when you finish)."
+  $("privacyDest").textContent = FORM ? "These are sent automatically to a Google Form of the researcher after every answer, and again when you come back."
                                       : "Nothing is sent automatically; at the end you can download your answers.";
   (function () {
     var k = store.get("argcheck:last"), s = k && store.get(k);
@@ -646,6 +734,7 @@ var FORM_LINK = "https://docs.google.com/forms/d/e/1FAIpQLSecphf41bETNNmk4fJO5hi
     var n = Object.keys(s.labels).length;
     if (n === 0) return;
     state = s; stateKey = k;
+    state.sent = 0; send();  // resend on every visit: delivery to the form can never be confirmed
     $("resumeText").textContent = (n === N ? "You answered all " + N + " questions" : "Welcome back! You have answered " + n + " of " + N + " questions")
       + (s.name ? " as “" + s.name + "”." : ".");
     $("resumeGo").textContent = n === N ? "Review answers" : "Continue";
